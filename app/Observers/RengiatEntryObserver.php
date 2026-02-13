@@ -14,6 +14,7 @@ class RengiatEntryObserver
      * @var array<int, string>
      */
     private array $auditableFields = [
+        'subdit_id',
         'unit_id',
         'entry_date',
         'time_start',

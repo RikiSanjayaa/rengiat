@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\RengiatEntry;
+use App\Models\Subdit;
 use App\Models\Unit;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -11,22 +12,21 @@ class RengiatReportBuilder
 {
     /**
      * @return array{
-     *   units: array<int, array{id:int,subdit_id:int|null,subdit_name:string|null,name:string,order_index:int}>,
+     *   units: array<int, array{id:int,name:string,order_index:int}>,
      *   days: array<int, array{
      *      date:string,
      *      header_line:string,
      *      rows: array<int, array{
-     *          subdit_id:int|null,
+     *          subdit_id:int,
      *          subdit_name:string,
-     *          show_subdit:bool,
-     *          subdit_rowspan:int,
-     *          unit_id:int,
-     *          unit_name:string,
-     *          entries: array<int, array{
-     *              id:int,
-     *              time_start:string|null,
-     *              description:string,
-     *              has_attachment:bool
+     *          cells: array<int, array{
+     *              unit_id:int,
+     *              entries: array<int, array{
+     *                  id:int,
+     *                  time_start:string|null,
+     *                  description:string,
+     *                  has_attachment:bool
+     *              }>
      *          }>
      *      }>
      *   }>,
@@ -36,23 +36,28 @@ class RengiatReportBuilder
     public function build(
         CarbonImmutable $startDate,
         CarbonImmutable $endDate,
+        ?int $subditId = null,
         ?int $unitId = null,
         ?string $keyword = null,
     ): array {
+        $subdits = Subdit::query()
+            ->when($subditId !== null, fn ($query) => $query->whereKey($subditId))
+            ->ordered()
+            ->get(['id', 'name', 'order_index']);
+
         $units = Unit::query()
-            ->with('subdit:id,name,order_index')
             ->active()
             ->when($unitId !== null, fn ($query) => $query->whereKey($unitId))
             ->ordered()
-            ->get();
+            ->get(['id', 'name', 'order_index']);
 
-        $entries = $this->fetchEntries($startDate, $endDate, $units, $keyword);
+        $entries = $this->fetchEntries($startDate, $endDate, $subdits, $units, $keyword);
 
-        $entriesByDateAndUnit = [];
+        $entriesByDateSubditAndUnit = [];
 
         foreach ($entries as $entry) {
             $dateKey = $entry->entry_date->toDateString();
-            $entriesByDateAndUnit[$dateKey][$entry->unit_id][] = [
+            $entriesByDateSubditAndUnit[$dateKey][$entry->subdit_id][$entry->unit_id][] = [
                 'id' => $entry->id,
                 'time_start' => $entry->time_start ? substr($entry->time_start, 0, 5) : null,
                 'description' => $this->resolveDescription($entry),
@@ -66,25 +71,22 @@ class RengiatReportBuilder
             $dateKey = $cursor->toDateString();
             $rows = [];
 
-            $units
-                ->groupBy(fn (Unit $unit): string => (string) ($unit->subdit_id ?? 0))
-                ->each(function (Collection $subditUnits) use (&$rows, $entriesByDateAndUnit, $dateKey): void {
-                    $subditName = $subditUnits->first()?->subdit?->name ?? 'Tanpa Subdit';
-                    $subditId = $subditUnits->first()?->subdit_id;
-                    $subditRowspan = $subditUnits->count();
+            foreach ($subdits as $subdit) {
+                $cells = [];
 
-                    foreach ($subditUnits as $index => $unit) {
-                        $rows[] = [
-                            'subdit_id' => $subditId,
-                            'subdit_name' => $subditName,
-                            'show_subdit' => $index === 0,
-                            'subdit_rowspan' => $subditRowspan,
-                            'unit_id' => $unit->id,
-                            'unit_name' => $unit->name,
-                            'entries' => $entriesByDateAndUnit[$dateKey][$unit->id] ?? [],
-                        ];
-                    }
-                });
+                foreach ($units as $unit) {
+                    $cells[] = [
+                        'unit_id' => $unit->id,
+                        'entries' => $entriesByDateSubditAndUnit[$dateKey][$subdit->id][$unit->id] ?? [],
+                    ];
+                }
+
+                $rows[] = [
+                    'subdit_id' => $subdit->id,
+                    'subdit_name' => $subdit->name,
+                    'cells' => $cells,
+                ];
+            }
 
             $days[] = [
                 'date' => $dateKey,
@@ -97,9 +99,7 @@ class RengiatReportBuilder
             'units' => $units
                 ->map(fn (Unit $unit) => [
                     'id' => $unit->id,
-                    'subdit_id' => $unit->subdit_id,
-                    'subdit_name' => $unit->subdit?->name,
-                    'name' => $unit->name,
+                    'name' => sprintf('Unit %d', $unit->order_index),
                     'order_index' => $unit->order_index,
                 ])
                 ->values()
@@ -110,22 +110,25 @@ class RengiatReportBuilder
     }
 
     /**
+     * @param  Collection<int, Subdit>  $subdits
      * @param  Collection<int, Unit>  $units
      * @return Collection<int, RengiatEntry>
      */
     private function fetchEntries(
         CarbonImmutable $startDate,
         CarbonImmutable $endDate,
+        Collection $subdits,
         Collection $units,
         ?string $keyword = null,
     ): Collection {
-        if ($units->isEmpty()) {
+        if ($subdits->isEmpty() || $units->isEmpty()) {
             return collect();
         }
 
         return RengiatEntry::query()
             ->whereDate('entry_date', '>=', $startDate->toDateString())
             ->whereDate('entry_date', '<=', $endDate->toDateString())
+            ->whereIn('subdit_id', $subdits->pluck('id'))
             ->whereIn('unit_id', $units->pluck('id'))
             ->when($keyword !== null && $keyword !== '', function ($query) use ($keyword): void {
                 $query->where(function ($innerQuery) use ($keyword): void {

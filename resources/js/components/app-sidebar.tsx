@@ -28,13 +28,11 @@ export function AppSidebar() {
         });
     }
 
-    if (auth.user.role !== 'operator') {
-        mainNavItems.push({
-            title: 'Generator Laporan',
-            href: '/reports',
-            icon: FileSpreadsheet,
-        });
-    }
+    mainNavItems.push({
+        title: 'Generator Laporan',
+        href: '/reports',
+        icon: FileSpreadsheet,
+    });
 
     if (auth.abilities.manage_users) {
         mainNavItems.push({

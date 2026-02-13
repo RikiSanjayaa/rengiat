@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\RengiatEntry;
+use App\Models\Subdit;
 use App\Models\Unit;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -17,6 +18,7 @@ class RengiatEntryFactory extends Factory
     public function definition(): array
     {
         return [
+            'subdit_id' => Subdit::factory(),
             'unit_id' => Unit::factory(),
             'entry_date' => fake()->dateTimeBetween('-10 days', 'now')->format('Y-m-d'),
             'time_start' => fake()->optional()->time('H:i'),

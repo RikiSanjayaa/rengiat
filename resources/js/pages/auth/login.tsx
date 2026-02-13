@@ -41,7 +41,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="username"
-                                    placeholder="superadmin"
+                                    placeholder="username"
                                 />
                                 <InputError message={errors.username} />
                             </div>

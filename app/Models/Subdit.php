@@ -21,13 +21,13 @@ class Subdit extends Model
         $query->orderBy('order_index')->orderBy('name');
     }
 
-    public function units(): HasMany
-    {
-        return $this->hasMany(Unit::class);
-    }
-
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function rengiatEntries(): HasMany
+    {
+        return $this->hasMany(RengiatEntry::class);
     }
 }

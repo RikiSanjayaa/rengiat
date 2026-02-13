@@ -13,19 +13,20 @@ Internal web app for logging daily activities per unit and generating official P
 ## Core Features
 
 - Daily entry logging per unit (no stored report entity)
+- Daily entry logging per kombinasi `subdit + unit`
 - Role-based access:
   - `super_admin` / `admin`: manage users + units, full entry access, export PDF
   - `operator`: CRUD entries for own subdit only (all data remains readable for all roles)
   - `viewer`: read-only + export PDF
 - Report generator with:
   - Start date + optional end date
-  - Optional unit filter (grouped by subdit)
+  - Optional global unit filter
   - Optional keyword filter in `description` (uraian)
-  - Multi-day paper preview grouped by subdit + unit
+  - Multi-day paper preview format matrix (`Subdit | Unit 1..N`)
 - PDF export:
   - A4 landscape
   - Dynamic title/header
-  - Subdit column shown at left and grouped rows per day
+  - Format matrix `Subdit | Unit 1..N` per hari
 - Audit logs for entry create/update/delete (`audit_logs`)
 - Optional image attachments (feature-flagged)
 

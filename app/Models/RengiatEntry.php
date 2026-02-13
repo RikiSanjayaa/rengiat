@@ -13,6 +13,7 @@ class RengiatEntry extends Model
     use HasFactory;
 
     protected $fillable = [
+        'subdit_id',
         'unit_id',
         'entry_date',
         'time_start',
@@ -42,6 +43,11 @@ class RengiatEntry extends Model
         return $this->belongsTo(Unit::class);
     }
 
+    public function subdit(): BelongsTo
+    {
+        return $this->belongsTo(Subdit::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -61,6 +67,7 @@ class RengiatEntry extends Model
     {
         return [
             'id' => $this->id,
+            'subdit_id' => $this->subdit_id,
             'unit_id' => $this->unit_id,
             'entry_date' => optional($this->entry_date)->toDateString(),
             'time_start' => $this->time_start,

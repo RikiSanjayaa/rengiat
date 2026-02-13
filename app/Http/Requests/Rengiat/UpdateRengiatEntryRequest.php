@@ -18,6 +18,7 @@ class UpdateRengiatEntryRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'subdit_id' => ['required', 'integer', 'exists:subdits,id'],
             'entry_date' => ['required', 'date'],
             'time_start' => ['nullable', 'date_format:H:i'],
             'description' => ['required', 'string'],

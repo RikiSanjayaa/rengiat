@@ -22,12 +22,14 @@ class RengiatEntryController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
+        $subditId = $this->resolveTargetSubditId($validated['subdit_id'] ?? null);
         $unitId = $this->resolveTargetUnitId($validated['unit_id'] ?? null);
 
-        $this->authorize('create', [RengiatEntry::class, $unitId]);
+        $this->authorize('create', [RengiatEntry::class, $subditId]);
 
-        DB::transaction(function () use ($request, $validated, $unitId, $user): void {
+        DB::transaction(function () use ($request, $validated, $subditId, $unitId, $user): void {
             $entry = RengiatEntry::create([
+                'subdit_id' => $subditId,
                 'unit_id' => $unitId,
                 'entry_date' => $validated['entry_date'],
                 'time_start' => $validated['time_start'] ?? null,
@@ -50,12 +52,14 @@ class RengiatEntryController extends Controller
         $validated = $request->validated();
         $user = $request->user();
 
+        $targetSubditId = $this->resolveTargetSubditId($validated['subdit_id'] ?? $rengiatEntry->subdit_id);
         $targetUnitId = $this->resolveTargetUnitId($validated['unit_id'] ?? $rengiatEntry->unit_id);
 
-        $this->authorize('create', [RengiatEntry::class, $targetUnitId]);
+        $this->authorize('create', [RengiatEntry::class, $targetSubditId]);
 
-        DB::transaction(function () use ($request, $validated, $targetUnitId, $rengiatEntry, $user): void {
+        DB::transaction(function () use ($request, $validated, $targetSubditId, $targetUnitId, $rengiatEntry, $user): void {
             $rengiatEntry->fill([
+                'subdit_id' => $targetSubditId,
                 'unit_id' => $targetUnitId,
                 'entry_date' => $validated['entry_date'],
                 'time_start' => $validated['time_start'] ?? null,
@@ -89,6 +93,19 @@ class RengiatEntryController extends Controller
     /**
      * @param  array<string, mixed>  $validated
      */
+    private function resolveTargetSubditId(?int $requestedSubditId): int
+    {
+        $resolvedSubditId = $requestedSubditId;
+
+        if ($resolvedSubditId === null) {
+            throw ValidationException::withMessages([
+                'subdit_id' => 'Subdit wajib dipilih.',
+            ]);
+        }
+
+        return $resolvedSubditId;
+    }
+
     private function resolveTargetUnitId(?int $requestedUnitId): int
     {
         $resolvedUnitId = $requestedUnitId;

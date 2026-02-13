@@ -16,6 +16,10 @@ enum UserRole: string
 
     public function canExport(): bool
     {
-        return in_array($this, [self::SuperAdmin, self::Admin, self::Viewer], true);
+        return in_array(
+            $this,
+            [self::SuperAdmin, self::Admin, self::Operator, self::Viewer],
+            true,
+        );
     }
 }

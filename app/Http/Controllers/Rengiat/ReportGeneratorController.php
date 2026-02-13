@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Rengiat;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Rengiat\ReportFilterRequest;
+use App\Models\Subdit;
 use App\Models\Unit;
 use App\Services\RengiatPdfExporter;
 use App\Services\RengiatReportBuilder;
@@ -26,6 +27,7 @@ class ReportGeneratorController extends Controller
         $report = $this->reportBuilder->build(
             $filters['start_date'],
             $filters['end_date'],
+            $filters['subdit_id'],
             $filters['unit_id'],
             $filters['keyword'],
         );
@@ -37,19 +39,25 @@ class ReportGeneratorController extends Controller
                 'end_date' => $filters['end_date']->equalTo($filters['start_date'])
                     ? null
                     : $filters['end_date']->toDateString(),
+                'subdit_id' => $filters['subdit_id'],
                 'unit_id' => $filters['unit_id'],
                 'keyword' => $filters['keyword'],
             ],
+            'filterSubdits' => Subdit::query()
+                ->ordered()
+                ->get(['id', 'name'])
+                ->map(fn (Subdit $subdit) => [
+                    'id' => $subdit->id,
+                    'name' => $subdit->name,
+                ])
+                ->values(),
             'filterUnits' => Unit::query()
-                ->with('subdit:id,name')
                 ->active()
                 ->ordered()
-                ->get(['id', 'subdit_id', 'name'])
+                ->get(['id', 'name', 'order_index'])
                 ->map(fn (Unit $unit) => [
                     'id' => $unit->id,
-                    'subdit_id' => $unit->subdit_id,
-                    'subdit_name' => $unit->subdit?->name,
-                    'name' => $unit->name,
+                    'name' => sprintf('Unit %d', $unit->order_index),
                 ])
                 ->values(),
             'report' => $report,
@@ -59,6 +67,7 @@ class ReportGeneratorController extends Controller
                 'end_date' => $filters['end_date']->equalTo($filters['start_date'])
                     ? null
                     : $filters['end_date']->toDateString(),
+                'subdit_id' => $filters['subdit_id'],
                 'unit_id' => $filters['unit_id'],
                 'keyword' => $filters['keyword'],
             ]),
@@ -74,6 +83,7 @@ class ReportGeneratorController extends Controller
         $report = $this->reportBuilder->build(
             $filters['start_date'],
             $filters['end_date'],
+            $filters['subdit_id'],
             $filters['unit_id'],
             $filters['keyword'],
         );
@@ -89,6 +99,7 @@ class ReportGeneratorController extends Controller
 
         return $this->pdfExporter->download([
             'title' => $report['title'],
+            'units' => $report['units'],
             'days' => $report['days'],
             'generated_at' => now()->setTimezone('Asia/Singapore')->format('d-m-Y H:i:s').' UTC+8',
         ], $fileName);
@@ -98,6 +109,7 @@ class ReportGeneratorController extends Controller
      * @return array{
      *   start_date: CarbonImmutable,
      *   end_date: CarbonImmutable,
+     *   subdit_id: int|null,
      *   unit_id: int|null,
      *   keyword: string|null
      * }
@@ -111,6 +123,7 @@ class ReportGeneratorController extends Controller
         return [
             'start_date' => $startDate,
             'end_date' => $endDate->lt($startDate) ? $startDate : $endDate,
+            'subdit_id' => isset($validated['subdit_id']) ? (int) $validated['subdit_id'] : null,
             'unit_id' => isset($validated['unit_id']) ? (int) $validated['unit_id'] : null,
             'keyword' => isset($validated['keyword']) && trim($validated['keyword']) !== ''
                 ? trim((string) $validated['keyword'])
@@ -123,17 +136,16 @@ class ReportGeneratorController extends Controller
      *   date:string,
      *   header_line:string,
      *   rows: array<int, array{
-     *      subdit_id:int|null,
+     *      subdit_id:int,
      *      subdit_name:string,
-     *      show_subdit:bool,
-     *      subdit_rowspan:int,
-     *      unit_id:int,
-     *      unit_name:string,
-     *      entries: array<int, array{
-     *          id:int,
-     *          time_start:string|null,
-     *          description:string,
-     *          has_attachment:bool
+     *      cells: array<int, array{
+     *          unit_id:int,
+     *          entries: array<int, array{
+     *              id:int,
+     *              time_start:string|null,
+     *              description:string,
+     *              has_attachment:bool
+     *          }>
      *      }>
      *   }>
      * }>  $days
@@ -141,17 +153,16 @@ class ReportGeneratorController extends Controller
      *   date:string,
      *   header_line:string,
      *   rows: array<int, array{
-     *      subdit_id:int|null,
+     *      subdit_id:int,
      *      subdit_name:string,
-     *      show_subdit:bool,
-     *      subdit_rowspan:int,
-     *      unit_id:int,
-     *      unit_name:string,
-     *      entries: array<int, array{
-     *          id:int,
-     *          time_start:string|null,
-     *          description:string,
-     *          has_attachment:bool
+     *      cells: array<int, array{
+     *          unit_id:int,
+     *          entries: array<int, array{
+     *              id:int,
+     *              time_start:string|null,
+     *              description:string,
+     *              has_attachment:bool
+     *          }>
      *      }>
      *   }>
      * }>
@@ -160,8 +171,10 @@ class ReportGeneratorController extends Controller
     {
         return array_values(array_filter($days, function (array $day): bool {
             foreach ($day['rows'] as $row) {
-                if (count($row['entries']) > 0) {
-                    return true;
+                foreach ($row['cells'] as $cell) {
+                    if (count($cell['entries']) > 0) {
+                        return true;
+                    }
                 }
             }
 

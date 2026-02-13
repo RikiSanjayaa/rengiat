@@ -21,29 +21,25 @@ class RengiatAuthorizationTest extends TestCase
     {
         $subditA = Subdit::factory()->create();
         $subditB = Subdit::factory()->create();
-
-        $unitA = Unit::factory()->create([
-            'subdit_id' => $subditA->id,
-        ]);
-        $unitB = Unit::factory()->create([
-            'subdit_id' => $subditB->id,
-        ]);
+        $unit = Unit::factory()->create();
 
         $operator = User::factory()->create([
             'role' => UserRole::Operator,
             'subdit_id' => $subditA->id,
-            'unit_id' => $unitA->id,
+            'unit_id' => null,
         ]);
 
         $entry = RengiatEntry::factory()->create([
-            'unit_id' => $unitB->id,
+            'subdit_id' => $subditB->id,
+            'unit_id' => $unit->id,
         ]);
 
         $response = $this->actingAs($operator)->put(route('entries.update', $entry), [
+            'subdit_id' => $subditB->id,
             'entry_date' => now()->toDateString(),
             'time_start' => '09:00',
             'description' => 'Tidak boleh diubah',
-            'unit_id' => $unitB->id,
+            'unit_id' => $unit->id,
         ]);
 
         $response->assertForbidden();
@@ -51,6 +47,7 @@ class RengiatAuthorizationTest extends TestCase
 
     public function test_viewer_cannot_create_update_or_delete_entries(): void
     {
+        $subdit = Subdit::factory()->create();
         $unit = Unit::factory()->create();
         $viewer = User::factory()->create([
             'role' => UserRole::Viewer,
@@ -58,16 +55,19 @@ class RengiatAuthorizationTest extends TestCase
         ]);
 
         $entry = RengiatEntry::factory()->create([
+            'subdit_id' => $subdit->id,
             'unit_id' => $unit->id,
         ]);
 
         $this->actingAs($viewer)->post(route('entries.store'), [
+            'subdit_id' => $subdit->id,
             'entry_date' => now()->toDateString(),
             'description' => 'Tidak boleh dibuat',
             'unit_id' => $unit->id,
         ])->assertForbidden();
 
         $this->actingAs($viewer)->put(route('entries.update', $entry), [
+            'subdit_id' => $subdit->id,
             'entry_date' => now()->toDateString(),
             'description' => 'Tidak boleh diubah',
             'unit_id' => $unit->id,
@@ -84,6 +84,7 @@ class RengiatAuthorizationTest extends TestCase
             'unit_id' => null,
         ]);
 
+        Subdit::factory()->create();
         Unit::factory()->create();
 
         $this->mock(RengiatPdfExporter::class, function (MockInterface $mock): void {
@@ -103,13 +104,44 @@ class RengiatAuthorizationTest extends TestCase
         $response->assertHeader('Content-Type', 'application/pdf');
     }
 
+    public function test_operator_can_export_report(): void
+    {
+        $subdit = Subdit::factory()->create();
+
+        $operator = User::factory()->create([
+            'role' => UserRole::Operator,
+            'subdit_id' => $subdit->id,
+            'unit_id' => null,
+        ]);
+
+        Subdit::factory()->create();
+        Unit::factory()->create();
+
+        $this->mock(RengiatPdfExporter::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('download')
+                ->once()
+                ->andReturn(response('pdf-content', 200, [
+                    'Content-Type' => 'application/pdf',
+                ]));
+        });
+
+        $response = $this->actingAs($operator)->get(route('reports.export', [
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->toDateString(),
+        ]));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+    }
+
     public function test_pdf_export_skips_days_without_any_activity(): void
     {
         $startDate = now()->subDay()->toDateString();
         $endDate = now()->toDateString();
 
+        $subdit = Subdit::factory()->create();
         $unit = Unit::factory()->create([
-            'name' => 'UNIT 1',
+            'name' => 'Unit 1',
             'order_index' => 1,
             'active' => true,
         ]);
@@ -121,11 +153,12 @@ class RengiatAuthorizationTest extends TestCase
 
         $operator = User::factory()->create([
             'role' => UserRole::Operator,
-            'subdit_id' => $unit->subdit_id,
-            'unit_id' => $unit->id,
+            'subdit_id' => $subdit->id,
+            'unit_id' => null,
         ]);
 
         RengiatEntry::factory()->create([
+            'subdit_id' => $subdit->id,
             'unit_id' => $unit->id,
             'entry_date' => $endDate,
             'description' => 'Aktivitas tersedia hanya di tanggal akhir',
@@ -159,14 +192,16 @@ class RengiatAuthorizationTest extends TestCase
 
     public function test_audit_logs_created_on_create_update_delete(): void
     {
+        $subdit = Subdit::factory()->create();
         $unit = Unit::factory()->create();
         $operator = User::factory()->create([
             'role' => UserRole::Operator,
-            'subdit_id' => $unit->subdit_id,
-            'unit_id' => $unit->id,
+            'subdit_id' => $subdit->id,
+            'unit_id' => null,
         ]);
 
         $this->actingAs($operator)->post(route('entries.store'), [
+            'subdit_id' => $subdit->id,
             'entry_date' => now()->toDateString(),
             'time_start' => '08:30',
             'description' => 'Aktivitas awal',
@@ -176,6 +211,7 @@ class RengiatAuthorizationTest extends TestCase
         $entry = RengiatEntry::query()->latest('id')->firstOrFail();
 
         $this->actingAs($operator)->put(route('entries.update', $entry), [
+            'subdit_id' => $subdit->id,
             'entry_date' => now()->toDateString(),
             'time_start' => '09:30',
             'description' => 'Aktivitas diubah',

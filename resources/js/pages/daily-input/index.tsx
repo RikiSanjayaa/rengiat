@@ -1,5 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { type FormEventHandler, useEffect, useMemo, useState } from 'react';
+import ConfirmDialog from '@/components/confirm-dialog';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,11 +17,15 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
+type SubditOption = {
+    id: number;
+    name: string;
+};
+
 type UnitOption = {
     id: number;
-    subdit_id: number | null;
-    subdit_name: string | null;
     name: string;
+    order_index: number;
 };
 
 type EntryAttachment = {
@@ -31,6 +36,7 @@ type EntryAttachment = {
 
 type Entry = {
     id: number;
+    subdit_id: number;
     unit_id: number;
     subdit_name: string | null;
     unit_name: string | null;
@@ -47,7 +53,9 @@ type Entry = {
 
 type DailyInputPageProps = {
     selectedDate: string;
+    selectedSubditId: number | null;
     selectedUnitId: number | null;
+    subdits: SubditOption[];
     units: UnitOption[];
     entries: Entry[];
     canCreate: boolean;
@@ -56,9 +64,10 @@ type DailyInputPageProps = {
 
 type EntryForm = {
     entry_date: string;
+    subdit_id: string;
+    unit_id: string;
     time_start: string;
     description: string;
-    unit_id: string;
     attachment: File | null;
     _method?: 'put';
 };
@@ -72,24 +81,32 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function DailyInputPage({
     selectedDate,
+    selectedSubditId,
     selectedUnitId,
+    subdits,
     units,
     entries,
     canCreate,
     attachmentsEnabled,
 }: DailyInputPageProps) {
     const [dateFilter, setDateFilter] = useState(selectedDate);
+    const [subditFilter, setSubditFilter] = useState<string>(
+        selectedSubditId ? String(selectedSubditId) : '',
+    );
     const [unitFilter, setUnitFilter] = useState<string>(
         selectedUnitId ? String(selectedUnitId) : '',
     );
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+    const [entryToDelete, setEntryToDelete] = useState<Entry | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const form = useForm<EntryForm>({
         entry_date: selectedDate,
+        subdit_id: selectedSubditId ? String(selectedSubditId) : '',
+        unit_id: selectedUnitId ? String(selectedUnitId) : '',
         time_start: '',
         description: '',
-        unit_id: selectedUnitId ? String(selectedUnitId) : '',
         attachment: null,
     });
 
@@ -98,40 +115,28 @@ export default function DailyInputPage({
         [canCreate, entries],
     );
 
-    const unitsBySubdit = useMemo(
-        () =>
-            units.reduce<Record<string, UnitOption[]>>((carry, unit) => {
-                const key = unit.subdit_name ?? 'Tanpa Subdit';
-                if (!carry[key]) {
-                    carry[key] = [];
-                }
-
-                carry[key].push(unit);
-
-                return carry;
-            }, {}),
-        [units],
-    );
-
     useEffect(() => {
         setDateFilter(selectedDate);
+        setSubditFilter(selectedSubditId ? String(selectedSubditId) : '');
         setUnitFilter(selectedUnitId ? String(selectedUnitId) : '');
-    }, [selectedDate, selectedUnitId]);
+    }, [selectedDate, selectedSubditId, selectedUnitId]);
 
     const currentQuery = useMemo(
         () => ({
             date: dateFilter,
+            subdit_id: subditFilter || undefined,
             unit_id: unitFilter || undefined,
         }),
-        [dateFilter, unitFilter],
+        [dateFilter, subditFilter, unitFilter],
     );
 
     const serverQuery = useMemo(
         () => ({
             date: selectedDate,
+            subdit_id: selectedSubditId ? String(selectedSubditId) : undefined,
             unit_id: selectedUnitId ? String(selectedUnitId) : undefined,
         }),
-        [selectedDate, selectedUnitId],
+        [selectedDate, selectedSubditId, selectedUnitId],
     );
 
     const currentQuerySignature = JSON.stringify(currentQuery);
@@ -158,9 +163,10 @@ export default function DailyInputPage({
         form.reset();
         form.setData({
             entry_date: dateFilter,
+            subdit_id: subditFilter,
+            unit_id: unitFilter,
             time_start: '',
             description: '',
-            unit_id: unitFilter,
             attachment: null,
         });
         setIsModalOpen(true);
@@ -171,9 +177,10 @@ export default function DailyInputPage({
         form.clearErrors();
         form.setData({
             entry_date: entry.entry_date,
+            subdit_id: String(entry.subdit_id),
+            unit_id: String(entry.unit_id),
             time_start: entry.time_start ?? '',
             description: entry.description,
-            unit_id: String(entry.unit_id),
             attachment: null,
             _method: 'put',
         });
@@ -206,12 +213,21 @@ export default function DailyInputPage({
     };
 
     const deleteEntry = (entry: Entry) => {
-        if (!window.confirm('Hapus entri ini?')) {
+        setEntryToDelete(entry);
+    };
+
+    const confirmDeleteEntry = () => {
+        if (!entryToDelete) {
             return;
         }
 
-        router.delete(`/entries/${entry.id}`, {
+        const targetEntry = entryToDelete;
+        setIsDeleting(true);
+        setEntryToDelete(null);
+
+        router.delete(`/entries/${targetEntry.id}`, {
             preserveScroll: true,
+            onFinish: () => setIsDeleting(false),
         });
     };
 
@@ -233,6 +249,23 @@ export default function DailyInputPage({
                             />
                         </div>
                         <div className="grid gap-2">
+                            <Label htmlFor="subdit-filter">Subdit</Label>
+                            <select
+                                id="subdit-filter"
+                                value={subditFilter}
+                                onChange={(event) =>
+                                    setSubditFilter(event.target.value)
+                                }
+                                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                            >
+                                {subdits.map((subdit) => (
+                                    <option key={subdit.id} value={subdit.id}>
+                                        {subdit.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="grid gap-2">
                             <Label htmlFor="unit-filter">Unit</Label>
                             <select
                                 id="unit-filter"
@@ -243,29 +276,16 @@ export default function DailyInputPage({
                                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                                 disabled={units.length <= 1}
                             >
-                                {Object.entries(unitsBySubdit).map(
-                                    ([subditName, subditUnits]) => (
-                                        <optgroup
-                                            key={subditName}
-                                            label={subditName}
-                                        >
-                                            {subditUnits.map((unit) => (
-                                                <option
-                                                    key={unit.id}
-                                                    value={unit.id}
-                                                >
-                                                    {unit.name}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                    ),
-                                )}
+                                {units.map((unit) => (
+                                    <option key={unit.id} value={unit.id}>
+                                        {unit.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         {hasWriteAccess && (
                             <Button
                                 type="button"
-                                variant="outline"
                                 onClick={openCreateModal}
                                 disabled={!canCreate}
                             >
@@ -278,7 +298,7 @@ export default function DailyInputPage({
                 <div className="space-y-3">
                     {entries.length === 0 && (
                         <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-                            Belum ada entri pada tanggal ini.
+                            Belum ada entri pada filter ini.
                         </div>
                     )}
 
@@ -362,12 +382,12 @@ export default function DailyInputPage({
                             {editingEntry ? 'Ubah Entri' : 'Tambah Entri'}
                         </DialogTitle>
                         <DialogDescription>
-                            Isi data aktivitas harian sesuai unit kerja.
+                            Isi data aktivitas harian sesuai subdit dan unit.
                         </DialogDescription>
                     </DialogHeader>
 
                     <form className="space-y-4" onSubmit={submitForm}>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div className="grid gap-2">
                                 <Label htmlFor="form-entry-date">Tanggal</Label>
                                 <Input
@@ -375,15 +395,54 @@ export default function DailyInputPage({
                                     type="date"
                                     value={form.data.entry_date}
                                     onChange={(event) =>
-                                        form.setData(
-                                            'entry_date',
-                                            event.target.value,
-                                        )
+                                        form.setData('entry_date', event.target.value)
                                     }
                                     required
                                 />
                                 <InputError message={form.errors.entry_date} />
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="form-subdit-id">Subdit</Label>
+                                <select
+                                    id="form-subdit-id"
+                                    value={form.data.subdit_id}
+                                    onChange={(event) =>
+                                        form.setData('subdit_id', event.target.value)
+                                    }
+                                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                    required
+                                >
+                                    {subdits.map((subdit) => (
+                                        <option key={subdit.id} value={subdit.id}>
+                                            {subdit.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={form.errors.subdit_id} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="form-unit-id">Unit</Label>
+                                <select
+                                    id="form-unit-id"
+                                    value={form.data.unit_id}
+                                    onChange={(event) =>
+                                        form.setData('unit_id', event.target.value)
+                                    }
+                                    className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                    required
+                                    disabled={units.length <= 1}
+                                >
+                                    {units.map((unit) => (
+                                        <option key={unit.id} value={unit.id}>
+                                            {unit.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <InputError message={form.errors.unit_id} />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="grid gap-2">
                                 <Label htmlFor="form-time-start">
                                     Jam Mulai (Opsional)
@@ -393,47 +452,11 @@ export default function DailyInputPage({
                                     type="time"
                                     value={form.data.time_start}
                                     onChange={(event) =>
-                                        form.setData(
-                                            'time_start',
-                                            event.target.value,
-                                        )
+                                        form.setData('time_start', event.target.value)
                                     }
                                 />
                                 <InputError message={form.errors.time_start} />
                             </div>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="form-unit-id">Unit</Label>
-                            <select
-                                id="form-unit-id"
-                                value={form.data.unit_id}
-                                onChange={(event) =>
-                                    form.setData('unit_id', event.target.value)
-                                }
-                                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                required
-                                disabled={units.length <= 1}
-                            >
-                                {Object.entries(unitsBySubdit).map(
-                                    ([subditName, subditUnits]) => (
-                                        <optgroup
-                                            key={subditName}
-                                            label={subditName}
-                                        >
-                                            {subditUnits.map((unit) => (
-                                                <option
-                                                    key={unit.id}
-                                                    value={unit.id}
-                                                >
-                                                    {unit.name}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                    ),
-                                )}
-                            </select>
-                            <InputError message={form.errors.unit_id} />
                         </div>
 
                         <div className="grid gap-2">
@@ -442,10 +465,7 @@ export default function DailyInputPage({
                                 id="form-description"
                                 value={form.data.description}
                                 onChange={(event) =>
-                                    form.setData(
-                                        'description',
-                                        event.target.value,
-                                    )
+                                    form.setData('description', event.target.value)
                                 }
                                 className="min-h-32 rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 required
@@ -488,6 +508,20 @@ export default function DailyInputPage({
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={entryToDelete !== null}
+                title="Hapus entri?"
+                description="Entri aktivitas ini akan dihapus permanen."
+                confirmLabel="Ya, Hapus"
+                processing={isDeleting}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setEntryToDelete(null);
+                    }
+                }}
+                onConfirm={confirmDeleteEntry}
+            />
         </AppLayout>
     );
 }

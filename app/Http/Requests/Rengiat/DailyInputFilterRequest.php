@@ -18,6 +18,7 @@ class DailyInputFilterRequest extends FormRequest
     {
         return [
             'date' => ['nullable', 'date'],
+            'subdit_id' => ['nullable', 'integer', 'exists:subdits,id'],
             'unit_id' => ['nullable', 'integer', 'exists:units,id'],
         ];
     }

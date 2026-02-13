@@ -31,17 +31,14 @@ class DatabaseSeeder extends Seeder
                 [
                     'name' => 'Subdit 1 Perempuan',
                     'order_index' => 1,
-                    'unit_count' => 3,
                 ],
                 [
                     'name' => 'Subdit 2 Anak',
                     'order_index' => 2,
-                    'unit_count' => 4,
                 ],
                 [
                     'name' => 'Subdit 3 TTPO',
                     'order_index' => 3,
-                    'unit_count' => 5,
                 ],
             ];
 
@@ -55,33 +52,22 @@ class DatabaseSeeder extends Seeder
                     return [$blueprint['order_index'] => $subdit];
                 });
 
-            $globalUnitOrder = 1;
-            $units = collect();
+            $globalUnitNumbers = range(1, 5);
 
-            foreach ($subditBlueprints as $blueprint) {
-                /** @var Subdit $subdit */
-                $subdit = $subdits[$blueprint['order_index']];
+            Unit::query()
+                ->whereNotIn('order_index', $globalUnitNumbers)
+                ->delete();
 
-                foreach (range(1, $blueprint['unit_count']) as $subditUnitOrder) {
-                    $unit = Unit::query()->updateOrCreate(
+            $units = collect($globalUnitNumbers)
+                ->map(function (int $unitNumber): Unit {
+                    return Unit::query()->updateOrCreate(
+                        ['order_index' => $unitNumber],
                         [
-                            'subdit_id' => $subdit->id,
-                            'order_index' => $globalUnitOrder,
-                        ],
-                        [
-                            'name' => sprintf(
-                                '%s - Unit %d',
-                                $subdit->name,
-                                $subditUnitOrder,
-                            ),
+                            'name' => sprintf('Unit %d', $unitNumber),
                             'active' => true,
                         ],
                     );
-
-                    $units->push($unit);
-                    $globalUnitOrder++;
-                }
-            }
+                });
 
             $password = Hash::make('password');
 
@@ -180,35 +166,38 @@ class DatabaseSeeder extends Seeder
                 $entryDateObject = $baseDate->addDays($dayOffset);
                 $entryDate = $entryDateObject->toDateString();
 
-                foreach ($units as $unit) {
-                    if (! $this->shouldSeedUnitOnDate($entryDateObject, $unit->order_index)) {
-                        continue;
-                    }
+                foreach ($subdits as $subdit) {
+                    foreach ($units as $unit) {
+                        if (! $this->shouldSeedSubditUnitOnDate($entryDateObject, $subdit->order_index, $unit->order_index)) {
+                            continue;
+                        }
 
-                    $entryCount = $this->resolveEntryCountForDate($entryDateObject);
+                        $entryCount = $this->resolveEntryCountForDate($entryDateObject);
 
-                    foreach (range(1, $entryCount) as $itemNumber) {
-                        $timeStart = random_int(0, 1) === 1
-                            ? CarbonImmutable::createFromTime(random_int(8, 17), random_int(0, 1) * 30)->format('H:i')
-                            : null;
+                        foreach (range(1, $entryCount) as $itemNumber) {
+                            $timeStart = random_int(0, 1) === 1
+                                ? CarbonImmutable::createFromTime(random_int(8, 17), random_int(0, 1) * 30)->format('H:i')
+                                : null;
 
-                        $createdAt = $entryDateObject->setTime(random_int(8, 19), random_int(0, 1) * 30);
-                        $updatedAt = $createdAt->addMinutes(random_int(0, 90));
+                            $createdAt = $entryDateObject->setTime(random_int(8, 19), random_int(0, 1) * 30);
+                            $updatedAt = $createdAt->addMinutes(random_int(0, 90));
 
-                        RengiatEntry::query()->create([
-                            'unit_id' => $unit->id,
-                            'entry_date' => $entryDate,
-                            'time_start' => $timeStart,
-                            'description' => $this->buildDemoDescription(
-                                $activityPool[array_rand($activityPool)],
-                                $unit->order_index,
-                            ),
-                            'case_number' => null,
-                            'created_by' => $operatorsBySubdit[$unit->subdit_id]->id,
-                            'updated_by' => null,
-                            'created_at' => $createdAt,
-                            'updated_at' => $updatedAt,
-                        ]);
+                            RengiatEntry::query()->create([
+                                'subdit_id' => $subdit->id,
+                                'unit_id' => $unit->id,
+                                'entry_date' => $entryDate,
+                                'time_start' => $timeStart,
+                                'description' => $this->buildDemoDescription(
+                                    $activityPool[array_rand($activityPool)],
+                                    $unit->order_index,
+                                ),
+                                'case_number' => null,
+                                'created_by' => $operatorsBySubdit[$subdit->id]->id,
+                                'updated_by' => null,
+                                'created_at' => $createdAt,
+                                'updated_at' => $updatedAt,
+                            ]);
+                        }
                     }
                 }
             }
@@ -243,11 +232,11 @@ class DatabaseSeeder extends Seeder
         return random_int(2, 6);
     }
 
-    private function shouldSeedUnitOnDate(CarbonImmutable $date, int $unitOrder): bool
+    private function shouldSeedSubditUnitOnDate(CarbonImmutable $date, int $subditOrder, int $unitOrder): bool
     {
         // Keep small gaps so report preview can display '-' cases.
         $skipThreshold = $date->isWeekend() ? 35 : 15;
-        $seedFactor = (($unitOrder * 13) + ((int) $date->day)) % 100;
+        $seedFactor = (($subditOrder * 29) + ($unitOrder * 13) + ((int) $date->day)) % 100;
 
         return $seedFactor >= $skipThreshold || random_int(1, 100) > $skipThreshold;
     }

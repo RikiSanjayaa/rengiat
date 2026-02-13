@@ -19,6 +19,7 @@ class ReportFilterRequest extends FormRequest
         return [
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'subdit_id' => ['nullable', 'integer', 'exists:subdits,id'],
             'unit_id' => ['nullable', 'integer', 'exists:units,id'],
             'keyword' => ['nullable', 'string', 'max:255'],
         ];

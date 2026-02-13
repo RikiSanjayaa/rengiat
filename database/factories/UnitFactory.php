@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Subdit;
 use App\Models\Unit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -15,10 +14,11 @@ class UnitFactory extends Factory
 
     public function definition(): array
     {
+        $unitNumber = fake()->unique()->numberBetween(1, 200);
+
         return [
-            'subdit_id' => Subdit::factory(),
-            'name' => fake()->unique()->company().' Unit',
-            'order_index' => fake()->numberBetween(1, 50),
+            'name' => sprintf('Unit %d', $unitNumber),
+            'order_index' => $unitNumber,
             'active' => true,
         ];
     }

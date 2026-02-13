@@ -111,35 +111,37 @@
             <table>
                 <thead>
                 <tr>
-                    <th style="width: 20%">Subdit</th>
-                    <th style="width: 20%">Unit</th>
-                    <th>Kegiatan</th>
+                    <th style="width: 12%">Subdit</th>
+                    @foreach($units as $unit)
+                        <th>{{ $unit['name'] }}</th>
+                    @endforeach
                 </tr>
                 </thead>
                 <tbody>
                 @foreach($day['rows'] as $row)
                     <tr>
                         <td><strong>{{ $row['subdit_name'] }}</strong></td>
-                        <td><strong>{{ $row['unit_name'] }}</strong></td>
-                        <td>
-                            @if(count($row['entries']) === 0)
-                                <div class="empty">-</div>
-                            @else
-                                <ol>
-                                    @foreach($row['entries'] as $entry)
-                                        <li>
-                                            @if($entry['time_start'])
-                                                [{{ $entry['time_start'] }}]
-                                            @endif
-                                            {{ $entry['description'] }}
-                                            @if($entry['has_attachment'])
-                                                [LAMPIRAN]
-                                            @endif
-                                        </li>
-                                    @endforeach
-                                </ol>
-                            @endif
-                        </td>
+                        @foreach($row['cells'] as $cell)
+                            <td>
+                                @if(count($cell['entries']) === 0)
+                                    <div class="empty">-</div>
+                                @else
+                                    <ol>
+                                        @foreach($cell['entries'] as $entry)
+                                            <li>
+                                                @if($entry['time_start'])
+                                                    [{{ $entry['time_start'] }}]
+                                                @endif
+                                                {{ $entry['description'] }}
+                                                @if($entry['has_attachment'])
+                                                    [LAMPIRAN]
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ol>
+                                @endif
+                            </td>
+                        @endforeach
                     </tr>
                 @endforeach
                 </tbody>

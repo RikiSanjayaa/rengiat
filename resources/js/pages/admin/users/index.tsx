@@ -1,5 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { type FormEventHandler, useMemo, useState } from 'react';
+import ConfirmDialog from '@/components/confirm-dialog';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,8 @@ const defaultRole: UserRecord['role'] = 'viewer';
 export default function UserManagementPage({ users, subdits, roles }: Props) {
     const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<UserRecord | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const form = useForm<UserForm>({
         name: '',
@@ -140,12 +143,21 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
     };
 
     const deleteUser = (user: UserRecord) => {
-        if (!window.confirm(`Hapus user ${user.name}?`)) {
+        setUserToDelete(user);
+    };
+
+    const confirmDeleteUser = () => {
+        if (!userToDelete) {
             return;
         }
 
-        router.delete(`/admin/users/${user.id}`, {
+        const targetUser = userToDelete;
+        setIsDeleting(true);
+        setUserToDelete(null);
+
+        router.delete(`/admin/users/${targetUser.id}`, {
             preserveScroll: true,
+            onFinish: () => setIsDeleting(false),
         });
     };
 
@@ -404,6 +416,22 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            <ConfirmDialog
+                open={userToDelete !== null}
+                title="Hapus user?"
+                description={`Akun ${
+                    userToDelete?.name ?? ''
+                } akan dihapus permanen.`}
+                confirmLabel="Ya, Hapus"
+                processing={isDeleting}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setUserToDelete(null);
+                    }
+                }}
+                onConfirm={confirmDeleteUser}
+            />
         </AppLayout>
     );
 }
