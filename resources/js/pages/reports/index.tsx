@@ -162,21 +162,6 @@ export default function ReportGeneratorPage({
     );
     const [keyword, setKeyword] = useState(filters.keyword ?? '');
 
-    useEffect(() => {
-        setDatePreset('');
-        setStartDate(filters.start_date);
-        setEndDate(filters.end_date ?? '');
-        setSubditId(filters.subdit_id ? String(filters.subdit_id) : '');
-        setUnitId(filters.unit_id ? String(filters.unit_id) : '');
-        setKeyword(filters.keyword ?? '');
-    }, [
-        filters.end_date,
-        filters.keyword,
-        filters.start_date,
-        filters.subdit_id,
-        filters.unit_id,
-    ]);
-
     const normalizeFilterPayload = (
         input: {
             start_date: string;

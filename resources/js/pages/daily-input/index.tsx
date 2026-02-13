@@ -115,12 +115,6 @@ export default function DailyInputPage({
         [canCreate, entries],
     );
 
-    useEffect(() => {
-        setDateFilter(selectedDate);
-        setSubditFilter(selectedSubditId ? String(selectedSubditId) : '');
-        setUnitFilter(selectedUnitId ? String(selectedUnitId) : '');
-    }, [selectedDate, selectedSubditId, selectedUnitId]);
-
     const currentQuery = useMemo(
         () => ({
             date: dateFilter,
