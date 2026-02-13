@@ -27,6 +27,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'subdit_id',
         'unit_id',
     ];
 
@@ -60,6 +61,11 @@ class User extends Authenticatable
     public function unit(): BelongsTo
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    public function subdit(): BelongsTo
+    {
+        return $this->belongsTo(Subdit::class);
     }
 
     public function createdEntries(): HasMany

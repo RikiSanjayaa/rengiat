@@ -37,7 +37,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         /** @var User|null $user */
-        $user = $request->user()?->loadMissing('unit:id,name');
+        $user = $request->user()?->loadMissing('unit:id,name', 'subdit:id,name');
 
         return [
             ...parent::share($request),
@@ -51,6 +51,8 @@ class HandleInertiaRequests extends Middleware
                     'avatar' => null,
                     'email_verified_at' => $user->email_verified_at?->toIso8601String(),
                     'role' => $user->role?->value,
+                    'subdit_id' => $user->subdit_id,
+                    'subdit_name' => $user->subdit?->name,
                     'unit_id' => $user->unit_id,
                     'unit_name' => $user->unit?->name,
                     'created_at' => $user->created_at?->toIso8601String(),

@@ -7,6 +7,8 @@ export type User = {
     email_verified_at: string | null;
     two_factor_enabled?: boolean;
     role: 'super_admin' | 'admin' | 'operator' | 'viewer';
+    subdit_id: number | null;
+    subdit_name: string | null;
     unit_id: number | null;
     unit_name: string | null;
     created_at: string;

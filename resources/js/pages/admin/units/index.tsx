@@ -18,17 +18,26 @@ import type { BreadcrumbItem } from '@/types';
 
 type UnitRecord = {
     id: number;
+    subdit_id: number;
+    subdit_name: string | null;
     name: string;
     order_index: number;
     active: boolean;
     created_at: string | null;
 };
 
+type SubditOption = {
+    id: number;
+    name: string;
+};
+
 type Props = {
     units: UnitRecord[];
+    subdits: SubditOption[];
 };
 
 type UnitForm = {
+    subdit_id: string;
     name: string;
     order_index: string;
     active: boolean;
@@ -42,11 +51,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function UnitManagementPage({ units }: Props) {
+export default function UnitManagementPage({ units, subdits }: Props) {
     const [editingUnit, setEditingUnit] = useState<UnitRecord | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const form = useForm<UnitForm>({
+        subdit_id: '',
         name: '',
         order_index: '1',
         active: true,
@@ -56,6 +66,7 @@ export default function UnitManagementPage({ units }: Props) {
         setEditingUnit(null);
         form.clearErrors();
         form.setData({
+            subdit_id: subdits.length > 0 ? String(subdits[0].id) : '',
             name: '',
             order_index: String(units.length + 1),
             active: true,
@@ -67,6 +78,7 @@ export default function UnitManagementPage({ units }: Props) {
         setEditingUnit(unit);
         form.clearErrors();
         form.setData({
+            subdit_id: String(unit.subdit_id),
             name: unit.name,
             order_index: String(unit.order_index),
             active: unit.active,
@@ -89,6 +101,7 @@ export default function UnitManagementPage({ units }: Props) {
 
         form.transform((data) => ({
             ...data,
+            subdit_id: Number(data.subdit_id),
             order_index: Number(data.order_index),
             _method: editingUnit ? 'put' : undefined,
         }));
@@ -128,6 +141,9 @@ export default function UnitManagementPage({ units }: Props) {
                         <thead>
                             <tr className="bg-muted/60">
                                 <th className="border px-3 py-2 text-left">
+                                    Subdit
+                                </th>
+                                <th className="border px-3 py-2 text-left">
                                     Nama
                                 </th>
                                 <th className="border px-3 py-2 text-left">
@@ -144,6 +160,9 @@ export default function UnitManagementPage({ units }: Props) {
                         <tbody>
                             {units.map((unit) => (
                                 <tr key={unit.id}>
+                                    <td className="border px-3 py-2">
+                                        {unit.subdit_name ?? '-'}
+                                    </td>
                                     <td className="border px-3 py-2">
                                         {unit.name}
                                     </td>
@@ -200,6 +219,30 @@ export default function UnitManagementPage({ units }: Props) {
                     </DialogHeader>
 
                     <form className="space-y-4" onSubmit={submitForm}>
+                        <div className="grid gap-2">
+                            <Label htmlFor="unit-subdit">Subdit</Label>
+                            <select
+                                id="unit-subdit"
+                                value={form.data.subdit_id}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'subdit_id',
+                                        event.target.value,
+                                    )
+                                }
+                                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                                required
+                            >
+                                <option value="">Pilih subdit</option>
+                                {subdits.map((subdit) => (
+                                    <option key={subdit.id} value={subdit.id}>
+                                        {subdit.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError message={form.errors.subdit_id} />
+                        </div>
+
                         <div className="grid gap-2">
                             <Label htmlFor="unit-name">Nama Unit</Label>
                             <Input

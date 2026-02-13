@@ -30,6 +30,7 @@ class ReportGeneratorPreviewTest extends TestCase
 
         $creator = User::factory()->create([
             'role' => UserRole::Operator,
+            'subdit_id' => $unit->subdit_id,
             'unit_id' => $unit->id,
         ]);
 
@@ -51,7 +52,7 @@ class ReportGeneratorPreviewTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('reports/index')
             ->where('report.days.0.date', $date)
-            ->where('report.days.0.columns.0.entries.0.id', $entry->id)
+            ->where('report.days.0.rows.0.entries.0.id', $entry->id)
         );
     }
 
@@ -71,6 +72,7 @@ class ReportGeneratorPreviewTest extends TestCase
 
         $creator = User::factory()->create([
             'role' => UserRole::Operator,
+            'subdit_id' => $unit->subdit_id,
             'unit_id' => $unit->id,
         ]);
 
@@ -93,7 +95,7 @@ class ReportGeneratorPreviewTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('reports/index')
             ->where('report.days.0.date', $date)
-            ->where('report.days.0.columns.0.entries.0.id', $entry->id)
+            ->where('report.days.0.rows.0.entries.0.id', $entry->id)
         );
     }
 
@@ -115,6 +117,7 @@ class ReportGeneratorPreviewTest extends TestCase
 
         $operator = User::factory()->create([
             'role' => UserRole::Operator,
+            'subdit_id' => $unit->subdit_id,
             'unit_id' => $unit->id,
         ]);
 

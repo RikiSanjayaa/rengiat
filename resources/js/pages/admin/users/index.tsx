@@ -22,14 +22,14 @@ type UserRecord = {
     username: string;
     email: string | null;
     role: 'super_admin' | 'admin' | 'operator' | 'viewer';
-    unit_id: number | null;
-    unit_name: string | null;
+    subdit_id: number | null;
+    subdit_name: string | null;
     created_at: string | null;
     can_edit: boolean;
     can_delete: boolean;
 };
 
-type UnitOption = {
+type SubditOption = {
     id: number;
     name: string;
 };
@@ -41,7 +41,7 @@ type RoleOption = {
 
 type Props = {
     users: UserRecord[];
-    units: UnitOption[];
+    subdits: SubditOption[];
     roles: RoleOption[];
 };
 
@@ -50,7 +50,7 @@ type UserForm = {
     username: string;
     email: string;
     role: UserRecord['role'];
-    unit_id: string;
+    subdit_id: string;
     password: string;
     password_confirmation: string;
     _method?: 'put';
@@ -65,7 +65,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const defaultRole: UserRecord['role'] = 'viewer';
 
-export default function UserManagementPage({ users, units, roles }: Props) {
+export default function UserManagementPage({ users, subdits, roles }: Props) {
     const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -74,13 +74,13 @@ export default function UserManagementPage({ users, units, roles }: Props) {
         username: '',
         email: '',
         role: defaultRole,
-        unit_id: '',
+        subdit_id: '',
         password: '',
         password_confirmation: '',
     });
 
     const selectedRole = useMemo(() => form.data.role, [form.data.role]);
-    const roleNeedsUnit = selectedRole === 'operator';
+    const roleNeedsSubdit = selectedRole === 'operator';
 
     const openCreate = () => {
         setEditingUser(null);
@@ -90,7 +90,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
             username: '',
             email: '',
             role: defaultRole,
-            unit_id: '',
+            subdit_id: '',
             password: '',
             password_confirmation: '',
         });
@@ -105,7 +105,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
             username: user.username,
             email: user.email ?? '',
             role: user.role,
-            unit_id: user.unit_id ? String(user.unit_id) : '',
+            subdit_id: user.subdit_id ? String(user.subdit_id) : '',
             password: '',
             password_confirmation: '',
             _method: 'put',
@@ -127,7 +127,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
 
         form.transform((data) => ({
             ...data,
-            unit_id: data.unit_id || null,
+            subdit_id: data.subdit_id || null,
             password: data.password || undefined,
             password_confirmation: data.password_confirmation || undefined,
             _method: editingUser ? 'put' : undefined,
@@ -183,7 +183,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                                     Role
                                 </th>
                                 <th className="border px-3 py-2 text-left">
-                                    Unit
+                                    Subdit
                                 </th>
                                 <th className="border px-3 py-2 text-right">
                                     Aksi
@@ -208,7 +208,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                                         </Badge>
                                     </td>
                                     <td className="border px-3 py-2">
-                                        {user.unit_name ?? '-'}
+                                        {user.subdit_name ?? '-'}
                                     </td>
                                     <td className="border px-3 py-2 text-right">
                                         <div className="flex justify-end gap-2">
@@ -244,7 +244,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                             {editingUser ? 'Ubah User' : 'Tambah User'}
                         </DialogTitle>
                         <DialogDescription>
-                            Role operator wajib memilih unit.
+                            Role operator wajib memilih subdit.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -324,27 +324,30 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                                 <InputError message={form.errors.role} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="user-unit">Unit</Label>
+                                <Label htmlFor="user-subdit">Subdit</Label>
                                 <select
-                                    id="user-unit"
+                                    id="user-subdit"
                                     className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                                    value={form.data.unit_id}
+                                    value={form.data.subdit_id}
                                     onChange={(event) =>
                                         form.setData(
-                                            'unit_id',
+                                            'subdit_id',
                                             event.target.value,
                                         )
                                     }
-                                    disabled={!roleNeedsUnit}
+                                    disabled={!roleNeedsSubdit}
                                 >
                                     <option value="">-</option>
-                                    {units.map((unit) => (
-                                        <option key={unit.id} value={unit.id}>
-                                            {unit.name}
+                                    {subdits.map((subdit) => (
+                                        <option
+                                            key={subdit.id}
+                                            value={subdit.id}
+                                        >
+                                            {subdit.name}
                                         </option>
                                     ))}
                                 </select>
-                                <InputError message={form.errors.unit_id} />
+                                <InputError message={form.errors.subdit_id} />
                             </div>
                         </div>
 

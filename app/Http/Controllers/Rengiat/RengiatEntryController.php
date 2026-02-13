@@ -22,7 +22,7 @@ class RengiatEntryController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
-        $unitId = $this->resolveTargetUnitId($validated['unit_id'] ?? null, $user->isOperator() ? $user->unit_id : null);
+        $unitId = $this->resolveTargetUnitId($validated['unit_id'] ?? null);
 
         $this->authorize('create', [RengiatEntry::class, $unitId]);
 
@@ -50,9 +50,9 @@ class RengiatEntryController extends Controller
         $validated = $request->validated();
         $user = $request->user();
 
-        $targetUnitId = $user->isOperator()
-            ? $rengiatEntry->unit_id
-            : ($validated['unit_id'] ?? $rengiatEntry->unit_id);
+        $targetUnitId = $this->resolveTargetUnitId($validated['unit_id'] ?? $rengiatEntry->unit_id);
+
+        $this->authorize('create', [RengiatEntry::class, $targetUnitId]);
 
         DB::transaction(function () use ($request, $validated, $targetUnitId, $rengiatEntry, $user): void {
             $rengiatEntry->fill([
@@ -89,9 +89,9 @@ class RengiatEntryController extends Controller
     /**
      * @param  array<string, mixed>  $validated
      */
-    private function resolveTargetUnitId(?int $requestedUnitId, ?int $operatorUnitId): int
+    private function resolveTargetUnitId(?int $requestedUnitId): int
     {
-        $resolvedUnitId = $operatorUnitId ?? $requestedUnitId;
+        $resolvedUnitId = $requestedUnitId;
 
         if ($resolvedUnitId === null) {
             throw ValidationException::withMessages([

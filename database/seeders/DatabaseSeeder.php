@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\RengiatAttachment;
 use App\Models\RengiatEntry;
+use App\Models\Subdit;
 use App\Models\Unit;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -26,14 +27,61 @@ class DatabaseSeeder extends Seeder
             RengiatEntry::query()->delete();
             AuditLog::query()->delete();
 
-            $units = collect(range(1, 5))
-                ->map(fn (int $index) => Unit::query()->updateOrCreate(
-                    ['order_index' => $index],
-                    [
-                        'name' => "UNIT {$index}",
-                        'active' => true,
-                    ],
-                ));
+            $subditBlueprints = [
+                [
+                    'name' => 'Subdit 1 Perempuan',
+                    'order_index' => 1,
+                    'unit_count' => 3,
+                ],
+                [
+                    'name' => 'Subdit 2 Anak',
+                    'order_index' => 2,
+                    'unit_count' => 4,
+                ],
+                [
+                    'name' => 'Subdit 3 TTPO',
+                    'order_index' => 3,
+                    'unit_count' => 5,
+                ],
+            ];
+
+            $subdits = collect($subditBlueprints)
+                ->mapWithKeys(function (array $blueprint): array {
+                    $subdit = Subdit::query()->updateOrCreate(
+                        ['order_index' => $blueprint['order_index']],
+                        ['name' => $blueprint['name']],
+                    );
+
+                    return [$blueprint['order_index'] => $subdit];
+                });
+
+            $globalUnitOrder = 1;
+            $units = collect();
+
+            foreach ($subditBlueprints as $blueprint) {
+                /** @var Subdit $subdit */
+                $subdit = $subdits[$blueprint['order_index']];
+
+                foreach (range(1, $blueprint['unit_count']) as $subditUnitOrder) {
+                    $unit = Unit::query()->updateOrCreate(
+                        [
+                            'subdit_id' => $subdit->id,
+                            'order_index' => $globalUnitOrder,
+                        ],
+                        [
+                            'name' => sprintf(
+                                '%s - Unit %d',
+                                $subdit->name,
+                                $subditUnitOrder,
+                            ),
+                            'active' => true,
+                        ],
+                    );
+
+                    $units->push($unit);
+                    $globalUnitOrder++;
+                }
+            }
 
             $password = Hash::make('password');
 
@@ -44,6 +92,7 @@ class DatabaseSeeder extends Seeder
                     'email' => 'superadmin@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::SuperAdmin,
+                    'subdit_id' => null,
                     'unit_id' => null,
                     'email_verified_at' => now(),
                 ],
@@ -56,6 +105,7 @@ class DatabaseSeeder extends Seeder
                     'email' => 'admin@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::Admin,
+                    'subdit_id' => null,
                     'unit_id' => null,
                     'email_verified_at' => now(),
                 ],
@@ -68,26 +118,42 @@ class DatabaseSeeder extends Seeder
                     'email' => 'viewer@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::Viewer,
+                    'subdit_id' => null,
                     'unit_id' => null,
                     'email_verified_at' => now(),
                 ],
             );
 
-            $operators = $units->mapWithKeys(function (Unit $unit) use ($password): array {
-                $operator = User::query()->updateOrCreate(
-                    ['username' => sprintf('operator%d', $unit->order_index)],
-                    [
-                        'name' => sprintf('Operator Unit %d', $unit->order_index),
-                        'email' => sprintf('operator%d@rengiat.test', $unit->order_index),
-                        'password' => $password,
-                        'role' => UserRole::Operator,
-                        'unit_id' => $unit->id,
-                        'email_verified_at' => now(),
-                    ],
-                );
+            $operatorUsernames = collect($subditBlueprints)
+                ->map(fn (array $blueprint): string => sprintf('operator_subdit%d', $blueprint['order_index']))
+                ->all();
 
-                return [$unit->id => $operator];
-            });
+            User::query()
+                ->where('role', UserRole::Operator->value)
+                ->whereNotIn('username', $operatorUsernames)
+                ->delete();
+
+            $operatorsBySubdit = collect($subditBlueprints)
+                ->mapWithKeys(function (array $blueprint) use ($password, $subdits): array {
+                    /** @var Subdit $subdit */
+                    $subdit = $subdits[$blueprint['order_index']];
+                    $username = sprintf('operator_subdit%d', $blueprint['order_index']);
+
+                    $operator = User::query()->updateOrCreate(
+                        ['username' => $username],
+                        [
+                            'name' => sprintf('Operator %s', $subdit->name),
+                            'email' => sprintf('%s@rengiat.test', $username),
+                            'password' => $password,
+                            'role' => UserRole::Operator,
+                            'subdit_id' => $subdit->id,
+                            'unit_id' => null,
+                            'email_verified_at' => now(),
+                        ],
+                    );
+
+                    return [$subdit->id => $operator];
+                });
 
             $activityPool = [
                 'Koordinasi lintas instansi terkait penanganan laporan.',
@@ -138,7 +204,7 @@ class DatabaseSeeder extends Seeder
                                 $unit->order_index,
                             ),
                             'case_number' => null,
-                            'created_by' => $operators[$unit->id]->id,
+                            'created_by' => $operatorsBySubdit[$unit->subdit_id]->id,
                             'updated_by' => null,
                             'created_at' => $createdAt,
                             'updated_at' => $updatedAt,
@@ -146,18 +212,6 @@ class DatabaseSeeder extends Seeder
                     }
                 }
             }
-
-            User::query()->updateOrCreate(
-                ['username' => 'operator'],
-                [
-                    'name' => 'Operator Demo',
-                    'email' => 'operator@rengiat.test',
-                    'password' => $password,
-                    'role' => UserRole::Operator,
-                    'unit_id' => $units->first()?->id,
-                    'email_verified_at' => now(),
-                ],
-            );
 
             $superAdmin->touch();
             $viewer->touch();

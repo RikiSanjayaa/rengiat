@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\RengiatEntry;
+use App\Models\Unit;
 use App\Models\User;
 
 class RengiatEntryPolicy
@@ -14,15 +15,7 @@ class RengiatEntryPolicy
 
     public function view(User $user, RengiatEntry $rengiatEntry): bool
     {
-        if ($user->isAdminLike()) {
-            return true;
-        }
-
-        if ($user->isOperator()) {
-            return $user->unit_id === $rengiatEntry->unit_id;
-        }
-
-        return $user->isViewer();
+        return true;
     }
 
     public function create(User $user, ?int $targetUnitId = null): bool
@@ -31,11 +24,17 @@ class RengiatEntryPolicy
             return true;
         }
 
-        if (! $user->isOperator() || $user->unit_id === null) {
+        $operatorSubditId = $this->resolveOperatorSubditId($user);
+
+        if (! $user->isOperator() || $operatorSubditId === null || $targetUnitId === null) {
             return false;
         }
 
-        return $targetUnitId === null || $targetUnitId === $user->unit_id;
+        $targetSubditId = Unit::query()
+            ->whereKey($targetUnitId)
+            ->value('subdit_id');
+
+        return $targetSubditId !== null && (int) $targetSubditId === $operatorSubditId;
     }
 
     public function update(User $user, RengiatEntry $rengiatEntry): bool
@@ -44,11 +43,40 @@ class RengiatEntryPolicy
             return true;
         }
 
-        return $user->isOperator() && $user->unit_id === $rengiatEntry->unit_id;
+        if (! $user->isOperator()) {
+            return false;
+        }
+
+        $operatorSubditId = $this->resolveOperatorSubditId($user);
+
+        if ($operatorSubditId === null) {
+            return false;
+        }
+
+        $entrySubditId = $rengiatEntry->unit()->value('subdit_id');
+
+        return $entrySubditId !== null && (int) $entrySubditId === $operatorSubditId;
     }
 
     public function delete(User $user, RengiatEntry $rengiatEntry): bool
     {
         return $this->update($user, $rengiatEntry);
+    }
+
+    private function resolveOperatorSubditId(User $user): ?int
+    {
+        if ($user->subdit_id !== null) {
+            return (int) $user->subdit_id;
+        }
+
+        if ($user->unit_id === null) {
+            return null;
+        }
+
+        $fallbackSubditId = Unit::query()
+            ->whereKey($user->unit_id)
+            ->value('subdit_id');
+
+        return $fallbackSubditId !== null ? (int) $fallbackSubditId : null;
     }
 }

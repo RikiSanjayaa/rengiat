@@ -22,20 +22,14 @@ class DailyInputController extends Controller
         $selectedDate = CarbonImmutable::parse($validated['date'] ?? now()->toDateString())->toDateString();
 
         $activeUnits = Unit::query()
+            ->with('subdit:id,name')
             ->active()
             ->ordered()
-            ->get(['id', 'name']);
+            ->get(['id', 'subdit_id', 'name']);
 
-        if ($user->isOperator()) {
-            $selectedUnitId = $user->unit_id;
-            $units = $activeUnits->where('id', $selectedUnitId)->values();
-        } else {
-            $selectedUnitId = isset($validated['unit_id'])
-                ? (int) $validated['unit_id']
-                : $activeUnits->first()?->id;
-
-            $units = $activeUnits;
-        }
+        $selectedUnitId = isset($validated['unit_id'])
+            ? (int) $validated['unit_id']
+            : $activeUnits->first()?->id;
 
         $entries = $selectedUnitId === null
             ? collect()
@@ -43,7 +37,8 @@ class DailyInputController extends Controller
                 ->whereDate('entry_date', $selectedDate)
                 ->where('unit_id', $selectedUnitId)
                 ->with([
-                    'unit:id,name',
+                    'unit:id,subdit_id,name',
+                    'unit.subdit:id,name',
                     'creator:id,name',
                     'updater:id,name',
                     'attachments:id,entry_id,path,mime_type,size_bytes',
@@ -54,13 +49,16 @@ class DailyInputController extends Controller
         return Inertia::render('daily-input/index', [
             'selectedDate' => $selectedDate,
             'selectedUnitId' => $selectedUnitId,
-            'units' => $units->map(fn (Unit $unit) => [
+            'units' => $activeUnits->map(fn (Unit $unit) => [
                 'id' => $unit->id,
+                'subdit_id' => $unit->subdit_id,
+                'subdit_name' => $unit->subdit?->name,
                 'name' => $unit->name,
             ])->values(),
             'entries' => $entries->map(fn (RengiatEntry $entry) => [
                 'id' => $entry->id,
                 'unit_id' => $entry->unit_id,
+                'subdit_name' => $entry->unit?->subdit?->name,
                 'unit_name' => $entry->unit?->name,
                 'entry_date' => $entry->entry_date->toDateString(),
                 'time_start' => $entry->time_start ? substr($entry->time_start, 0, 5) : null,

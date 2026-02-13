@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUnitRequest;
 use App\Http\Requests\Admin\UpdateUnitRequest;
+use App\Models\Subdit;
 use App\Models\Unit;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -15,10 +16,13 @@ class UnitManagementController extends Controller
     public function index(): Response
     {
         $units = Unit::query()
+            ->with('subdit:id,name')
             ->ordered()
             ->get()
             ->map(fn (Unit $unit) => [
                 'id' => $unit->id,
+                'subdit_id' => $unit->subdit_id,
+                'subdit_name' => $unit->subdit?->name,
                 'name' => $unit->name,
                 'order_index' => $unit->order_index,
                 'active' => $unit->active,
@@ -28,6 +32,14 @@ class UnitManagementController extends Controller
 
         return Inertia::render('admin/units/index', [
             'units' => $units,
+            'subdits' => Subdit::query()
+                ->ordered()
+                ->get(['id', 'name'])
+                ->map(fn (Subdit $subdit) => [
+                    'id' => $subdit->id,
+                    'name' => $subdit->name,
+                ])
+                ->values(),
         ]);
     }
 

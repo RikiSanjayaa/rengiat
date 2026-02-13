@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AuditLogAction;
 use App\Enums\UserRole;
 use App\Models\RengiatEntry;
+use App\Models\Subdit;
 use App\Models\Unit;
 use App\Models\User;
 use App\Services\RengiatPdfExporter;
@@ -16,13 +17,21 @@ class RengiatAuthorizationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_operator_cannot_edit_other_units_entries(): void
+    public function test_operator_cannot_edit_other_subdit_entries(): void
     {
-        $unitA = Unit::factory()->create();
-        $unitB = Unit::factory()->create();
+        $subditA = Subdit::factory()->create();
+        $subditB = Subdit::factory()->create();
+
+        $unitA = Unit::factory()->create([
+            'subdit_id' => $subditA->id,
+        ]);
+        $unitB = Unit::factory()->create([
+            'subdit_id' => $subditB->id,
+        ]);
 
         $operator = User::factory()->create([
             'role' => UserRole::Operator,
+            'subdit_id' => $subditA->id,
             'unit_id' => $unitA->id,
         ]);
 
@@ -112,6 +121,7 @@ class RengiatAuthorizationTest extends TestCase
 
         $operator = User::factory()->create([
             'role' => UserRole::Operator,
+            'subdit_id' => $unit->subdit_id,
             'unit_id' => $unit->id,
         ]);
 
@@ -152,6 +162,7 @@ class RengiatAuthorizationTest extends TestCase
         $unit = Unit::factory()->create();
         $operator = User::factory()->create([
             'role' => UserRole::Operator,
+            'subdit_id' => $unit->subdit_id,
             'unit_id' => $unit->id,
         ]);
 

@@ -15,17 +15,17 @@ Internal web app for logging daily activities per unit and generating official P
 - Daily entry logging per unit (no stored report entity)
 - Role-based access:
   - `super_admin` / `admin`: manage users + units, full entry access, export PDF
-  - `operator`: CRUD entries for own unit only
+  - `operator`: CRUD entries for own subdit only (all data remains readable for all roles)
   - `viewer`: read-only + export PDF
 - Report generator with:
   - Start date + optional end date
-  - Optional unit filter
+  - Optional unit filter (grouped by subdit)
   - Optional keyword filter in `description` (uraian)
-  - Multi-day paper preview (dynamic unit columns)
+  - Multi-day paper preview grouped by subdit + unit
 - PDF export:
   - A4 landscape
   - Dynamic title/header
-  - Page break per day
+  - Subdit column shown at left and grouped rows per day
 - Audit logs for entry create/update/delete (`audit_logs`)
 - Optional image attachments (feature-flagged)
 
@@ -83,8 +83,9 @@ All demo users use password: `password`
 - `superadmin` (`super_admin`)
 - `admin` (`admin`)
 - `viewer` (`viewer`)
-- `operator` (`operator`)
-- `operator1` ... `operator5` (`operator` per unit)
+- `operator_subdit1` (`operator` untuk `Subdit 1 Perempuan`)
+- `operator_subdit2` (`operator` untuk `Subdit 2 Anak`)
+- `operator_subdit3` (`operator` untuk `Subdit 3 TTPO`)
 
 ## PDF Engine Notes
 

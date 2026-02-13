@@ -8,6 +8,8 @@ import type { BreadcrumbItem } from '@/types';
 
 type UnitFilter = {
     id: number;
+    subdit_id: number | null;
+    subdit_name: string | null;
     name: string;
 };
 
@@ -18,7 +20,11 @@ type ReportEntry = {
     has_attachment: boolean;
 };
 
-type ReportColumn = {
+type ReportRow = {
+    subdit_id: number | null;
+    subdit_name: string;
+    show_subdit: boolean;
+    subdit_rowspan: number;
     unit_id: number;
     unit_name: string;
     entries: ReportEntry[];
@@ -27,12 +33,18 @@ type ReportColumn = {
 type ReportDay = {
     date: string;
     header_line: string;
-    columns: ReportColumn[];
+    rows: ReportRow[];
 };
 
 type ReportPayload = {
     title: string;
-    units: Array<{ id: number; name: string; order_index: number }>;
+    units: Array<{
+        id: number;
+        subdit_id: number | null;
+        subdit_name: string | null;
+        name: string;
+        order_index: number;
+    }>;
     days: ReportDay[];
 };
 
@@ -185,6 +197,21 @@ export default function ReportGeneratorPage({
     const currentQuerySignature = JSON.stringify(currentQuery);
     const serverQuerySignature = JSON.stringify(serverQuery);
 
+    const filterUnitsBySubdit = useMemo(
+        () =>
+            filterUnits.reduce<Record<string, UnitFilter[]>>((carry, unit) => {
+                const key = unit.subdit_name ?? 'Tanpa Subdit';
+                if (!carry[key]) {
+                    carry[key] = [];
+                }
+
+                carry[key].push(unit);
+
+                return carry;
+            }, {}),
+        [filterUnits],
+    );
+
     const applyDatePreset = (event: ChangeEvent<HTMLSelectElement>) => {
         const nextPreset = event.target.value as DatePreset;
         setDatePreset(nextPreset);
@@ -274,11 +301,23 @@ export default function ReportGeneratorPage({
                                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                             >
                                 <option value="">Semua Unit</option>
-                                {filterUnits.map((unit) => (
-                                    <option key={unit.id} value={unit.id}>
-                                        {unit.name}
-                                    </option>
-                                ))}
+                                {Object.entries(filterUnitsBySubdit).map(
+                                    ([subditName, subditUnits]) => (
+                                        <optgroup
+                                            key={subditName}
+                                            label={subditName}
+                                        >
+                                            {subditUnits.map((unit) => (
+                                                <option
+                                                    key={unit.id}
+                                                    value={unit.id}
+                                                >
+                                                    {unit.name}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    ),
+                                )}
                             </select>
                         </div>
                         <div className="grid gap-2">
@@ -322,68 +361,73 @@ export default function ReportGeneratorPage({
                                         {day.header_line}
                                     </div>
                                     <div className="overflow-x-auto">
-                                        <table className="w-full min-w-[900px] border-collapse border text-sm">
+                                        <table className="w-full min-w-[960px] border-collapse border text-sm">
                                             <thead>
                                                 <tr>
-                                                    {day.columns.map(
-                                                        (column) => (
-                                                            <th
-                                                                key={
-                                                                    column.unit_id
-                                                                }
-                                                                className="border bg-muted px-3 py-2 text-center text-xs uppercase"
-                                                            >
-                                                                {column.unit_name}
-                                                            </th>
-                                                        ),
-                                                    )}
+                                                    <th className="w-48 border bg-muted px-3 py-2 text-left text-xs uppercase">
+                                                        Subdit
+                                                    </th>
+                                                    <th className="w-48 border bg-muted px-3 py-2 text-left text-xs uppercase">
+                                                        Unit
+                                                    </th>
+                                                    <th className="border bg-muted px-3 py-2 text-left text-xs uppercase">
+                                                        Kegiatan
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr>
-                                                    {day.columns.map(
-                                                        (column) => (
+                                                {day.rows.map((row) => (
+                                                    <tr key={row.unit_id}>
+                                                        {row.show_subdit && (
                                                             <td
-                                                                key={
-                                                                    column.unit_id
+                                                                rowSpan={
+                                                                    row.subdit_rowspan
                                                                 }
-                                                                className="h-28 border px-3 py-2 align-top"
+                                                                className="border px-3 py-2 align-top font-semibold"
                                                             >
-                                                                {column.entries
-                                                                    .length ===
-                                                                0 ? (
-                                                                    <div className="text-center text-muted-foreground">
-                                                                        -
-                                                                    </div>
-                                                                ) : (
-                                                                    <ol className="list-decimal space-y-1 pl-5">
-                                                                        {column.entries.map(
-                                                                            (
-                                                                                entry,
-                                                                            ) => (
-                                                                                <li
-                                                                                    key={
-                                                                                        entry.id
-                                                                                    }
-                                                                                >
-                                                                                    {entry.time_start
-                                                                                        ? `[${entry.time_start}] `
-                                                                                        : ''}
-                                                                                    {
-                                                                                        entry.description
-                                                                                    }
-                                                                                    {entry.has_attachment
-                                                                                        ? ' [LAMPIRAN]'
-                                                                                        : ''}
-                                                                                </li>
-                                                                            ),
-                                                                        )}
-                                                                    </ol>
-                                                                )}
+                                                                {
+                                                                    row.subdit_name
+                                                                }
                                                             </td>
-                                                        ),
-                                                    )}
-                                                </tr>
+                                                        )}
+                                                        <td className="border px-3 py-2 align-top font-medium">
+                                                            {row.unit_name}
+                                                        </td>
+                                                        <td className="h-20 border px-3 py-2 align-top">
+                                                            {row.entries
+                                                                .length ===
+                                                            0 ? (
+                                                                <div className="text-center text-muted-foreground">
+                                                                    -
+                                                                </div>
+                                                            ) : (
+                                                                <ol className="list-decimal space-y-1 pl-5">
+                                                                    {row.entries.map(
+                                                                        (
+                                                                            entry,
+                                                                        ) => (
+                                                                            <li
+                                                                                key={
+                                                                                    entry.id
+                                                                                }
+                                                                            >
+                                                                                {entry.time_start
+                                                                                    ? `[${entry.time_start}] `
+                                                                                    : ''}
+                                                                                {
+                                                                                    entry.description
+                                                                                }
+                                                                                {entry.has_attachment
+                                                                                    ? ' [LAMPIRAN]'
+                                                                                    : ''}
+                                                                            </li>
+                                                                        ),
+                                                                    )}
+                                                                </ol>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                             </tbody>
                                         </table>
                                     </div>

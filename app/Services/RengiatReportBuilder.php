@@ -11,11 +11,15 @@ class RengiatReportBuilder
 {
     /**
      * @return array{
-     *   units: array<int, array{id:int,name:string,order_index:int}>,
+     *   units: array<int, array{id:int,subdit_id:int|null,subdit_name:string|null,name:string,order_index:int}>,
      *   days: array<int, array{
      *      date:string,
      *      header_line:string,
-     *      columns: array<int, array{
+     *      rows: array<int, array{
+     *          subdit_id:int|null,
+     *          subdit_name:string,
+     *          show_subdit:bool,
+     *          subdit_rowspan:int,
      *          unit_id:int,
      *          unit_name:string,
      *          entries: array<int, array{
@@ -36,6 +40,7 @@ class RengiatReportBuilder
         ?string $keyword = null,
     ): array {
         $units = Unit::query()
+            ->with('subdit:id,name,order_index')
             ->active()
             ->when($unitId !== null, fn ($query) => $query->whereKey($unitId))
             ->ordered()
@@ -59,20 +64,32 @@ class RengiatReportBuilder
 
         for ($cursor = $startDate; $cursor->lte($endDate); $cursor = $cursor->addDay()) {
             $dateKey = $cursor->toDateString();
+            $rows = [];
 
-            $columns = $units
-                ->map(fn (Unit $unit) => [
-                    'unit_id' => $unit->id,
-                    'unit_name' => $unit->name,
-                    'entries' => $entriesByDateAndUnit[$dateKey][$unit->id] ?? [],
-                ])
-                ->values()
-                ->all();
+            $units
+                ->groupBy(fn (Unit $unit): string => (string) ($unit->subdit_id ?? 0))
+                ->each(function (Collection $subditUnits) use (&$rows, $entriesByDateAndUnit, $dateKey): void {
+                    $subditName = $subditUnits->first()?->subdit?->name ?? 'Tanpa Subdit';
+                    $subditId = $subditUnits->first()?->subdit_id;
+                    $subditRowspan = $subditUnits->count();
+
+                    foreach ($subditUnits as $index => $unit) {
+                        $rows[] = [
+                            'subdit_id' => $subditId,
+                            'subdit_name' => $subditName,
+                            'show_subdit' => $index === 0,
+                            'subdit_rowspan' => $subditRowspan,
+                            'unit_id' => $unit->id,
+                            'unit_name' => $unit->name,
+                            'entries' => $entriesByDateAndUnit[$dateKey][$unit->id] ?? [],
+                        ];
+                    }
+                });
 
             $days[] = [
                 'date' => $dateKey,
                 'header_line' => $this->formatDayHeader($cursor),
-                'columns' => $columns,
+                'rows' => $rows,
             ];
         }
 
@@ -80,6 +97,8 @@ class RengiatReportBuilder
             'units' => $units
                 ->map(fn (Unit $unit) => [
                     'id' => $unit->id,
+                    'subdit_id' => $unit->subdit_id,
+                    'subdit_name' => $unit->subdit?->name,
                     'name' => $unit->name,
                     'order_index' => $unit->order_index,
                 ])

@@ -36,12 +36,14 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            page-break-inside: auto;
         }
 
         th, td {
             border: 1px solid #374151;
             vertical-align: top;
             padding: 6px;
+            word-break: break-word;
         }
 
         th {
@@ -50,6 +52,15 @@
             font-size: 10px;
             letter-spacing: 0.4px;
             text-align: center;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
         }
 
         ol {
@@ -77,7 +88,11 @@
 
         .day-section {
             margin-bottom: 10px;
-            page-break-inside: avoid;
+            page-break-inside: auto;
+        }
+
+        .day-section + .day-section {
+            page-break-before: always;
         }
     </style>
 </head>
@@ -96,20 +111,22 @@
             <table>
                 <thead>
                 <tr>
-                    @foreach($day['columns'] as $column)
-                        <th>{{ $column['unit_name'] }}</th>
-                    @endforeach
+                    <th style="width: 20%">Subdit</th>
+                    <th style="width: 20%">Unit</th>
+                    <th>Kegiatan</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    @foreach($day['columns'] as $column)
+                @foreach($day['rows'] as $row)
+                    <tr>
+                        <td><strong>{{ $row['subdit_name'] }}</strong></td>
+                        <td><strong>{{ $row['unit_name'] }}</strong></td>
                         <td>
-                            @if(count($column['entries']) === 0)
+                            @if(count($row['entries']) === 0)
                                 <div class="empty">-</div>
                             @else
                                 <ol>
-                                    @foreach($column['entries'] as $entry)
+                                    @foreach($row['entries'] as $entry)
                                         <li>
                                             @if($entry['time_start'])
                                                 [{{ $entry['time_start'] }}]
@@ -123,8 +140,8 @@
                                 </ol>
                             @endif
                         </td>
-                    @endforeach
-                </tr>
+                    </tr>
+                @endforeach
                 </tbody>
             </table>
         </section>

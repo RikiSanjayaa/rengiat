@@ -25,11 +25,11 @@ class StoreUserRequest extends FormRequest
             'username' => ['required', 'string', 'max:120', 'alpha_dash:ascii', 'lowercase', 'unique:users,username'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', new Enum(UserRole::class)],
-            'unit_id' => [
+            'subdit_id' => [
                 Rule::requiredIf($this->input('role') === UserRole::Operator->value),
                 'nullable',
                 'integer',
-                'exists:units,id',
+                'exists:subdits,id',
             ],
             'password' => ['required', 'confirmed', Password::defaults()],
         ];

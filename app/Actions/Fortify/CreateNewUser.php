@@ -31,6 +31,7 @@ class CreateNewUser implements CreatesNewUsers
             'email' => $input['email'],
             'password' => $input['password'],
             'role' => UserRole::Viewer,
+            'subdit_id' => null,
             'unit_id' => null,
         ]);
     }

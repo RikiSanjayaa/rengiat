@@ -41,11 +41,14 @@ class ReportGeneratorController extends Controller
                 'keyword' => $filters['keyword'],
             ],
             'filterUnits' => Unit::query()
+                ->with('subdit:id,name')
                 ->active()
                 ->ordered()
-                ->get(['id', 'name'])
+                ->get(['id', 'subdit_id', 'name'])
                 ->map(fn (Unit $unit) => [
                     'id' => $unit->id,
+                    'subdit_id' => $unit->subdit_id,
+                    'subdit_name' => $unit->subdit?->name,
                     'name' => $unit->name,
                 ])
                 ->values(),
@@ -119,7 +122,11 @@ class ReportGeneratorController extends Controller
      * @param  array<int, array{
      *   date:string,
      *   header_line:string,
-     *   columns: array<int, array{
+     *   rows: array<int, array{
+     *      subdit_id:int|null,
+     *      subdit_name:string,
+     *      show_subdit:bool,
+     *      subdit_rowspan:int,
      *      unit_id:int,
      *      unit_name:string,
      *      entries: array<int, array{
@@ -133,7 +140,11 @@ class ReportGeneratorController extends Controller
      * @return array<int, array{
      *   date:string,
      *   header_line:string,
-     *   columns: array<int, array{
+     *   rows: array<int, array{
+     *      subdit_id:int|null,
+     *      subdit_name:string,
+     *      show_subdit:bool,
+     *      subdit_rowspan:int,
      *      unit_id:int,
      *      unit_name:string,
      *      entries: array<int, array{
@@ -148,8 +159,8 @@ class ReportGeneratorController extends Controller
     private function filterDaysWithEntries(array $days): array
     {
         return array_values(array_filter($days, function (array $day): bool {
-            foreach ($day['columns'] as $column) {
-                if (count($column['entries']) > 0) {
+            foreach ($day['rows'] as $row) {
+                if (count($row['entries']) > 0) {
                     return true;
                 }
             }

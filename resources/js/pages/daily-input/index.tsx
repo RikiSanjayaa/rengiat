@@ -18,6 +18,8 @@ import type { BreadcrumbItem } from '@/types';
 
 type UnitOption = {
     id: number;
+    subdit_id: number | null;
+    subdit_name: string | null;
     name: string;
 };
 
@@ -30,6 +32,7 @@ type EntryAttachment = {
 type Entry = {
     id: number;
     unit_id: number;
+    subdit_name: string | null;
     unit_name: string | null;
     entry_date: string;
     time_start: string | null;
@@ -93,6 +96,21 @@ export default function DailyInputPage({
     const hasWriteAccess = useMemo(
         () => canCreate || entries.some((entry) => entry.can_update),
         [canCreate, entries],
+    );
+
+    const unitsBySubdit = useMemo(
+        () =>
+            units.reduce<Record<string, UnitOption[]>>((carry, unit) => {
+                const key = unit.subdit_name ?? 'Tanpa Subdit';
+                if (!carry[key]) {
+                    carry[key] = [];
+                }
+
+                carry[key].push(unit);
+
+                return carry;
+            }, {}),
+        [units],
     );
 
     useEffect(() => {
@@ -225,11 +243,23 @@ export default function DailyInputPage({
                                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                                 disabled={units.length <= 1}
                             >
-                                {units.map((unit) => (
-                                    <option key={unit.id} value={unit.id}>
-                                        {unit.name}
-                                    </option>
-                                ))}
+                                {Object.entries(unitsBySubdit).map(
+                                    ([subditName, subditUnits]) => (
+                                        <optgroup
+                                            key={subditName}
+                                            label={subditName}
+                                        >
+                                            {subditUnits.map((unit) => (
+                                                <option
+                                                    key={unit.id}
+                                                    value={unit.id}
+                                                >
+                                                    {unit.name}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    ),
+                                )}
                             </select>
                         </div>
                         {hasWriteAccess && (
@@ -261,6 +291,9 @@ export default function DailyInputPage({
                                 <Badge variant="secondary">
                                     {entry.time_start ?? 'Tanpa Jam'}
                                 </Badge>
+                                <span className="text-muted-foreground">
+                                    {entry.subdit_name ?? '-'}
+                                </span>
                                 <span className="font-medium">
                                     {entry.unit_name ?? '-'}
                                 </span>
@@ -382,11 +415,23 @@ export default function DailyInputPage({
                                 required
                                 disabled={units.length <= 1}
                             >
-                                {units.map((unit) => (
-                                    <option key={unit.id} value={unit.id}>
-                                        {unit.name}
-                                    </option>
-                                ))}
+                                {Object.entries(unitsBySubdit).map(
+                                    ([subditName, subditUnits]) => (
+                                        <optgroup
+                                            key={subditName}
+                                            label={subditName}
+                                        >
+                                            {subditUnits.map((unit) => (
+                                                <option
+                                                    key={unit.id}
+                                                    value={unit.id}
+                                                >
+                                                    {unit.name}
+                                                </option>
+                                            ))}
+                                        </optgroup>
+                                    ),
+                                )}
                             </select>
                             <InputError message={form.errors.unit_id} />
                         </div>

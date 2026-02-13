@@ -22,6 +22,7 @@ class UpdateUnitRequest extends FormRequest
         $unit = $this->route('unit');
 
         return [
+            'subdit_id' => ['required', 'integer', 'exists:subdits,id'],
             'name' => ['required', 'string', 'max:120', Rule::unique('units', 'name')->ignore($unit->id)],
             'order_index' => ['required', 'integer', 'min:1'],
             'active' => ['required', 'boolean'],

@@ -42,7 +42,7 @@ class UserManagementAuthorizationTest extends TestCase
                 'username' => $target->username,
                 'email' => $target->email,
                 'role' => UserRole::SuperAdmin->value,
-                'unit_id' => null,
+                'subdit_id' => null,
                 'password' => '',
                 'password_confirmation' => '',
             ])

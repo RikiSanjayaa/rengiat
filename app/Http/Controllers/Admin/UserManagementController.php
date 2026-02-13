@@ -6,7 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
-use App\Models\Unit;
+use App\Models\Subdit;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class UserManagementController extends Controller
 
         return Inertia::render('admin/users/index', [
             'users' => User::query()
-                ->with('unit:id,name')
+                ->with('subdit:id,name')
                 ->orderBy('name')
                 ->get()
                 ->map(fn (User $user) => [
@@ -33,20 +33,19 @@ class UserManagementController extends Controller
                     'username' => $user->username,
                     'email' => $user->email,
                     'role' => $user->role?->value,
-                    'unit_id' => $user->unit_id,
-                    'unit_name' => $user->unit?->name,
+                    'subdit_id' => $user->subdit_id,
+                    'subdit_name' => $user->subdit?->name,
                     'created_at' => $user->created_at?->toDateTimeString(),
                     'can_edit' => $actor?->can('manage-users') && $this->canManageTargetUser($actor, $user),
                     'can_delete' => $actor?->can('manage-users') && ! $actor->is($user) && $this->canManageTargetUser($actor, $user),
                 ])
                 ->values(),
-            'units' => Unit::query()
-                ->active()
+            'subdits' => Subdit::query()
                 ->ordered()
                 ->get(['id', 'name'])
-                ->map(fn (Unit $unit) => [
-                    'id' => $unit->id,
-                    'name' => $unit->name,
+                ->map(fn (Subdit $subdit) => [
+                    'id' => $subdit->id,
+                    'name' => $subdit->name,
                 ])
                 ->values(),
             'roles' => collect(UserRole::cases())
@@ -76,9 +75,10 @@ class UserManagementController extends Controller
             'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'],
-            'unit_id' => $validated['role'] === UserRole::Operator->value
-                ? $validated['unit_id']
+            'subdit_id' => $validated['role'] === UserRole::Operator->value
+                ? $validated['subdit_id']
                 : null,
+            'unit_id' => null,
             'password' => Hash::make($validated['password']),
         ]);
 
@@ -108,9 +108,10 @@ class UserManagementController extends Controller
             'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'],
-            'unit_id' => $validated['role'] === UserRole::Operator->value
-                ? $validated['unit_id']
+            'subdit_id' => $validated['role'] === UserRole::Operator->value
+                ? $validated['subdit_id']
                 : null,
+            'unit_id' => null,
         ];
 
         if (! empty($validated['password'])) {

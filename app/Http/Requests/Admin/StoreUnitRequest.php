@@ -17,6 +17,7 @@ class StoreUnitRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'subdit_id' => ['required', 'integer', 'exists:subdits,id'],
             'name' => ['required', 'string', 'max:120', 'unique:units,name'],
             'order_index' => ['required', 'integer', 'min:1'],
             'active' => ['required', 'boolean'],

@@ -21,7 +21,7 @@ class StoreRengiatEntryRequest extends FormRequest
             'entry_date' => ['required', 'date'],
             'time_start' => ['nullable', 'date_format:H:i'],
             'description' => ['required', 'string'],
-            'unit_id' => ['nullable', 'integer', 'exists:units,id'],
+            'unit_id' => ['required', 'integer', 'exists:units,id'],
             'attachment' => [
                 Rule::prohibitedIf(! config('rengiat.enable_attachments')),
                 'nullable',

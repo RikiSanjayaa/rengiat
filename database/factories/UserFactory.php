@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\UserRole;
-use App\Models\Unit;
+use App\Models\Subdit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -33,6 +33,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'role' => UserRole::Viewer,
+            'subdit_id' => null,
             'unit_id' => null,
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
@@ -66,6 +67,7 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => [
             'role' => UserRole::SuperAdmin,
+            'subdit_id' => null,
             'unit_id' => null,
         ]);
     }
@@ -74,6 +76,7 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => [
             'role' => UserRole::Admin,
+            'subdit_id' => null,
             'unit_id' => null,
         ]);
     }
@@ -82,15 +85,17 @@ class UserFactory extends Factory
     {
         return $this->state(fn () => [
             'role' => UserRole::Viewer,
+            'subdit_id' => null,
             'unit_id' => null,
         ]);
     }
 
-    public function operator(?Unit $unit = null): static
+    public function operator(?Subdit $subdit = null): static
     {
         return $this->state(fn () => [
             'role' => UserRole::Operator,
-            'unit_id' => $unit?->id ?? Unit::factory(),
+            'subdit_id' => $subdit?->id ?? Subdit::factory(),
+            'unit_id' => null,
         ]);
     }
 }
