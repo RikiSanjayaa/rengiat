@@ -96,4 +96,48 @@ class ReportGeneratorPreviewTest extends TestCase
             ->where('report.days.0.columns.0.entries.0.id', $entry->id)
         );
     }
+
+    public function test_preview_skips_days_without_any_activity(): void
+    {
+        $startDate = now()->subDay()->toDateString();
+        $endDate = now()->toDateString();
+
+        $unit = Unit::factory()->create([
+            'name' => 'UNIT 1',
+            'order_index' => 1,
+            'active' => true,
+        ]);
+
+        $viewer = User::factory()->create([
+            'role' => UserRole::Viewer,
+            'unit_id' => null,
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => UserRole::Operator,
+            'unit_id' => $unit->id,
+        ]);
+
+        RengiatEntry::query()->create([
+            'unit_id' => $unit->id,
+            'entry_date' => $endDate,
+            'time_start' => '08:30',
+            'description' => 'Aktivitas hanya di tanggal akhir',
+            'case_number' => null,
+            'created_by' => $operator->id,
+            'updated_by' => null,
+        ]);
+
+        $response = $this->actingAs($viewer)->get(route('reports.index', [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('reports/index')
+            ->where('report.days', fn ($days): bool => count($days) === 1)
+            ->where('report.days.0.date', $endDate)
+        );
+    }
 }

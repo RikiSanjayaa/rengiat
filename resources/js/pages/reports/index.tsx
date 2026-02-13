@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { type FormEventHandler } from 'react';
+import { type ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,12 +49,68 @@ type PageProps = {
     exportUrl: string;
 };
 
+type DatePreset = '' | 'this_week' | 'last_week' | 'this_month' | 'last_month';
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Generator Laporan',
         href: '/reports',
     },
 ];
+
+const formatDateInput = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
+const resolvePresetRange = (
+    preset: Exclude<DatePreset, ''>,
+): { startDate: string; endDate: string } => {
+    const today = new Date();
+    const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    if (preset === 'this_week' || preset === 'last_week') {
+        const dayOfWeek = base.getDay();
+        const daysSinceMonday = (dayOfWeek + 6) % 7;
+
+        const startOfThisWeek = new Date(base);
+        startOfThisWeek.setDate(startOfThisWeek.getDate() - daysSinceMonday);
+
+        const start = new Date(startOfThisWeek);
+        if (preset === 'last_week') {
+            start.setDate(start.getDate() - 7);
+        }
+
+        const end = new Date(start);
+        end.setDate(end.getDate() + 6);
+
+        return {
+            startDate: formatDateInput(start),
+            endDate: formatDateInput(end),
+        };
+    }
+
+    if (preset === 'this_month') {
+        const start = new Date(base.getFullYear(), base.getMonth(), 1);
+        const end = new Date(base.getFullYear(), base.getMonth() + 1, 0);
+
+        return {
+            startDate: formatDateInput(start),
+            endDate: formatDateInput(end),
+        };
+    }
+
+    const start = new Date(base.getFullYear(), base.getMonth() - 1, 1);
+    const end = new Date(base.getFullYear(), base.getMonth(), 0);
+
+    return {
+        startDate: formatDateInput(start),
+        endDate: formatDateInput(end),
+    };
+};
 
 export default function ReportGeneratorPage({
     filters,
@@ -63,52 +119,133 @@ export default function ReportGeneratorPage({
     canExport,
     exportUrl,
 }: PageProps) {
-    const submitFilters: FormEventHandler<HTMLFormElement> = (event) => {
-        event.preventDefault();
+    const [datePreset, setDatePreset] = useState<DatePreset>('');
+    const [startDate, setStartDate] = useState(filters.start_date);
+    const [endDate, setEndDate] = useState(filters.end_date ?? '');
+    const [unitId, setUnitId] = useState(
+        filters.unit_id ? String(filters.unit_id) : '',
+    );
+    const [keyword, setKeyword] = useState(filters.keyword ?? '');
 
-        const formData = new FormData(event.currentTarget);
+    useEffect(() => {
+        setDatePreset('');
+        setStartDate(filters.start_date);
+        setEndDate(filters.end_date ?? '');
+        setUnitId(filters.unit_id ? String(filters.unit_id) : '');
+        setKeyword(filters.keyword ?? '');
+    }, [filters.end_date, filters.keyword, filters.start_date, filters.unit_id]);
 
-        const startDate = String(formData.get('start_date') ?? '');
-        const endDateValue = String(formData.get('end_date') ?? '').trim();
-        const unitIdValue = String(formData.get('unit_id') ?? '').trim();
-        const keywordValue = String(formData.get('keyword') ?? '').trim();
+    const normalizeFilterPayload = (
+        input: {
+            start_date: string;
+            end_date: string;
+            unit_id: string;
+            keyword: string;
+        },
+    ) => {
+        const normalizedStartDate = input.start_date.trim();
+        const normalizedEndDate = input.end_date.trim();
+        const normalizedUnitId = input.unit_id.trim();
+        const normalizedKeyword = input.keyword.trim();
 
-        router.get(
-            '/reports',
-            {
+        return {
+            start_date: normalizedStartDate,
+            end_date:
+                normalizedEndDate !== '' &&
+                normalizedEndDate !== normalizedStartDate
+                    ? normalizedEndDate
+                    : undefined,
+            unit_id: normalizedUnitId || undefined,
+            keyword: normalizedKeyword || undefined,
+        };
+    };
+
+    const currentQuery = useMemo(
+        () =>
+            normalizeFilterPayload({
                 start_date: startDate,
-                end_date:
-                    endDateValue !== '' && endDateValue !== startDate
-                        ? endDateValue
-                        : undefined,
-                unit_id: unitIdValue || undefined,
-                keyword: keywordValue || undefined,
-            },
-            {
-                preserveState: false,
+                end_date: endDate,
+                unit_id: unitId,
+                keyword,
+            }),
+        [endDate, keyword, startDate, unitId],
+    );
+
+    const serverQuery = useMemo(
+        () =>
+            normalizeFilterPayload({
+                start_date: filters.start_date,
+                end_date: filters.end_date ?? '',
+                unit_id: filters.unit_id ? String(filters.unit_id) : '',
+                keyword: filters.keyword ?? '',
+            }),
+        [filters.end_date, filters.keyword, filters.start_date, filters.unit_id],
+    );
+
+    const currentQuerySignature = JSON.stringify(currentQuery);
+    const serverQuerySignature = JSON.stringify(serverQuery);
+
+    const applyDatePreset = (event: ChangeEvent<HTMLSelectElement>) => {
+        const nextPreset = event.target.value as DatePreset;
+        setDatePreset(nextPreset);
+
+        if (nextPreset === '') {
+            return;
+        }
+
+        const range = resolvePresetRange(nextPreset);
+        setStartDate(range.startDate);
+        setEndDate(range.endDate);
+    };
+
+    useEffect(() => {
+        if (currentQuerySignature === serverQuerySignature) {
+            return;
+        }
+
+        const debounceId = window.setTimeout(() => {
+            router.get('/reports', currentQuery, {
+                preserveState: true,
                 preserveScroll: true,
                 replace: true,
-            },
-        );
-    };
+            });
+        }, 250);
+
+        return () => window.clearTimeout(debounceId);
+    }, [currentQuery, currentQuerySignature, serverQuerySignature]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Generator Laporan" />
             <div className="mx-auto w-full max-w-7xl space-y-4 p-4">
                 <section className="rounded-xl border bg-card p-4">
-                    <form
-                        key={`${filters.start_date}|${filters.end_date ?? ''}|${filters.unit_id ?? ''}|${filters.keyword ?? ''}`}
-                        className="grid gap-4 md:grid-cols-5 md:items-end"
-                        onSubmit={submitFilters}
-                    >
+                    <div className="grid gap-4 md:grid-cols-6 md:items-end">
+                        <div className="grid gap-2">
+                            <Label htmlFor="date-preset">Preset Tanggal</Label>
+                            <select
+                                id="date-preset"
+                                value={datePreset}
+                                onChange={applyDatePreset}
+                                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                            >
+                                <option value="">Pilih preset</option>
+                                <option value="this_week">Minggu Ini</option>
+                                <option value="last_week">Minggu Lalu</option>
+                                <option value="this_month">Bulan Ini</option>
+                                <option value="last_month">Bulan Lalu</option>
+                            </select>
+                        </div>
                         <div className="grid gap-2">
                             <Label htmlFor="start-date">Tanggal Mulai</Label>
                             <Input
                                 id="start-date"
                                 name="start_date"
                                 type="date"
-                                defaultValue={filters.start_date}
+                                value={startDate}
+                                onChange={(event) => {
+                                    setDatePreset('');
+                                    setStartDate(event.target.value);
+                                }}
                                 required
                             />
                         </div>
@@ -118,7 +255,11 @@ export default function ReportGeneratorPage({
                                 id="end-date"
                                 name="end_date"
                                 type="date"
-                                defaultValue={filters.end_date ?? ''}
+                                value={endDate}
+                                onChange={(event) => {
+                                    setDatePreset('');
+                                    setEndDate(event.target.value);
+                                }}
                             />
                         </div>
                         <div className="grid gap-2">
@@ -126,8 +267,9 @@ export default function ReportGeneratorPage({
                             <select
                                 id="unit-id"
                                 name="unit_id"
-                                defaultValue={
-                                    filters.unit_id ? String(filters.unit_id) : ''
+                                value={unitId}
+                                onChange={(event) =>
+                                    setUnitId(event.target.value)
                                 }
                                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                             >
@@ -146,18 +288,20 @@ export default function ReportGeneratorPage({
                                 name="keyword"
                                 type="text"
                                 placeholder="Cari kata pada uraian"
-                                defaultValue={filters.keyword ?? ''}
+                                value={keyword}
+                                onChange={(event) =>
+                                    setKeyword(event.target.value)
+                                }
                             />
                         </div>
                         <div className="flex gap-2">
-                            <Button type="submit">Preview</Button>
                             {canExport && (
                                 <Button type="button" variant="outline" asChild>
                                     <a href={exportUrl}>Export PDF</a>
                                 </Button>
                             )}
                         </div>
-                    </form>
+                    </div>
                 </section>
 
                 <section className="rounded-xl border bg-card p-4">
@@ -165,75 +309,87 @@ export default function ReportGeneratorPage({
                         {report.title}
                     </h2>
 
-                    <div className="space-y-8">
-                        {report.days.map((day, dayIndex) => (
-                            <article
-                                key={day.date}
-                                className={`space-y-3 ${dayIndex < report.days.length - 1 ? 'print:break-after-page' : ''}`}
-                            >
-                                <div className="border-y py-2 text-sm font-semibold">
-                                    {day.header_line}
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full min-w-[900px] border-collapse border text-sm">
-                                        <thead>
-                                            <tr>
-                                                {day.columns.map((column) => (
-                                                    <th
-                                                        key={column.unit_id}
-                                                        className="border bg-muted px-3 py-2 text-center text-xs uppercase"
-                                                    >
-                                                        {column.unit_name}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                {day.columns.map((column) => (
-                                                    <td
-                                                        key={column.unit_id}
-                                                        className="h-28 border px-3 py-2 align-top"
-                                                    >
-                                                        {column.entries.length ===
-                                                        0 ? (
-                                                            <div className="text-center text-muted-foreground">
-                                                                -
-                                                            </div>
-                                                        ) : (
-                                                            <ol className="list-decimal space-y-1 pl-5">
-                                                                {column.entries.map(
-                                                                    (entry) => (
-                                                                        <li
-                                                                            key={
-                                                                                entry.id
-                                                                            }
-                                                                        >
-                                                                            {entry.time_start
-                                                                                ? `[${entry.time_start}] `
-                                                                                : ''}
-                                                                            {
-                                                                                entry.description
-                                                                            }
-                                                                            {entry.has_attachment
-                                                                                ? ' [LAMPIRAN]'
-                                                                                : ''}
-                                                                        </li>
-                                                                    ),
+                    <div className="space-y-4">
+                        {report.days.length === 0 ? (
+                            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                                Tidak ada data kegiatan pada rentang tanggal
+                                terpilih.
+                            </div>
+                        ) : (
+                            report.days.map((day) => (
+                                <article key={day.date} className="space-y-2">
+                                    <div className="border-y py-2 text-sm font-semibold">
+                                        {day.header_line}
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full min-w-[900px] border-collapse border text-sm">
+                                            <thead>
+                                                <tr>
+                                                    {day.columns.map(
+                                                        (column) => (
+                                                            <th
+                                                                key={
+                                                                    column.unit_id
+                                                                }
+                                                                className="border bg-muted px-3 py-2 text-center text-xs uppercase"
+                                                            >
+                                                                {column.unit_name}
+                                                            </th>
+                                                        ),
+                                                    )}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    {day.columns.map(
+                                                        (column) => (
+                                                            <td
+                                                                key={
+                                                                    column.unit_id
+                                                                }
+                                                                className="h-28 border px-3 py-2 align-top"
+                                                            >
+                                                                {column.entries
+                                                                    .length ===
+                                                                0 ? (
+                                                                    <div className="text-center text-muted-foreground">
+                                                                        -
+                                                                    </div>
+                                                                ) : (
+                                                                    <ol className="list-decimal space-y-1 pl-5">
+                                                                        {column.entries.map(
+                                                                            (
+                                                                                entry,
+                                                                            ) => (
+                                                                                <li
+                                                                                    key={
+                                                                                        entry.id
+                                                                                    }
+                                                                                >
+                                                                                    {entry.time_start
+                                                                                        ? `[${entry.time_start}] `
+                                                                                        : ''}
+                                                                                    {
+                                                                                        entry.description
+                                                                                    }
+                                                                                    {entry.has_attachment
+                                                                                        ? ' [LAMPIRAN]'
+                                                                                        : ''}
+                                                                                </li>
+                                                                            ),
+                                                                        )}
+                                                                    </ol>
                                                                 )}
-                                                            </ol>
-                                                        )}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                {dayIndex < report.days.length - 1 && (
-                                    <div className="my-6 border-b border-dashed"></div>
-                                )}
-                            </article>
-                        ))}
+                                                            </td>
+                                                        ),
+                                                    )}
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </article>
+                            ))
+                        )}
                     </div>
                 </section>
             </div>

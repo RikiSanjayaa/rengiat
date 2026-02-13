@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { type FormEventHandler, useMemo, useState } from 'react';
+import { type FormEventHandler, useEffect, useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -95,20 +95,45 @@ export default function DailyInputPage({
         [canCreate, entries],
     );
 
-    const refreshWithFilters = () => {
-        router.get(
-            '/daily-input',
-            {
-                date: dateFilter,
-                unit_id: unitFilter || undefined,
-            },
-            {
+    useEffect(() => {
+        setDateFilter(selectedDate);
+        setUnitFilter(selectedUnitId ? String(selectedUnitId) : '');
+    }, [selectedDate, selectedUnitId]);
+
+    const currentQuery = useMemo(
+        () => ({
+            date: dateFilter,
+            unit_id: unitFilter || undefined,
+        }),
+        [dateFilter, unitFilter],
+    );
+
+    const serverQuery = useMemo(
+        () => ({
+            date: selectedDate,
+            unit_id: selectedUnitId ? String(selectedUnitId) : undefined,
+        }),
+        [selectedDate, selectedUnitId],
+    );
+
+    const currentQuerySignature = JSON.stringify(currentQuery);
+    const serverQuerySignature = JSON.stringify(serverQuery);
+
+    useEffect(() => {
+        if (currentQuerySignature === serverQuerySignature) {
+            return;
+        }
+
+        const debounceId = window.setTimeout(() => {
+            router.get('/daily-input', currentQuery, {
                 preserveState: true,
                 preserveScroll: true,
                 replace: true,
-            },
-        );
-    };
+            });
+        }, 200);
+
+        return () => window.clearTimeout(debounceId);
+    }, [currentQuery, currentQuerySignature, serverQuerySignature]);
 
     const openCreateModal = () => {
         setEditingEntry(null);
@@ -207,9 +232,6 @@ export default function DailyInputPage({
                                 ))}
                             </select>
                         </div>
-                        <Button type="button" onClick={refreshWithFilters}>
-                            Tampilkan
-                        </Button>
                         {hasWriteAccess && (
                             <Button
                                 type="button"

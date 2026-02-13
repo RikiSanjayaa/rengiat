@@ -29,6 +29,7 @@ class ReportGeneratorController extends Controller
             $filters['unit_id'],
             $filters['keyword'],
         );
+        $report['days'] = $this->filterDaysWithEntries($report['days']);
 
         return Inertia::render('reports/index', [
             'filters' => [
@@ -73,6 +74,7 @@ class ReportGeneratorController extends Controller
             $filters['unit_id'],
             $filters['keyword'],
         );
+        $report['days'] = $this->filterDaysWithEntries($report['days']);
 
         $fileName = $filters['start_date']->equalTo($filters['end_date'])
             ? sprintf('rengiat-%s.pdf', $filters['start_date']->format('Ymd'))
@@ -85,7 +87,7 @@ class ReportGeneratorController extends Controller
         return $this->pdfExporter->download([
             'title' => $report['title'],
             'days' => $report['days'],
-            'generated_at' => now()->format('d-m-Y H:i:s'),
+            'generated_at' => now()->setTimezone('Asia/Singapore')->format('d-m-Y H:i:s').' UTC+8',
         ], $fileName);
     }
 
@@ -111,5 +113,48 @@ class ReportGeneratorController extends Controller
                 ? trim((string) $validated['keyword'])
                 : null,
         ];
+    }
+
+    /**
+     * @param  array<int, array{
+     *   date:string,
+     *   header_line:string,
+     *   columns: array<int, array{
+     *      unit_id:int,
+     *      unit_name:string,
+     *      entries: array<int, array{
+     *          id:int,
+     *          time_start:string|null,
+     *          description:string,
+     *          has_attachment:bool
+     *      }>
+     *   }>
+     * }>  $days
+     * @return array<int, array{
+     *   date:string,
+     *   header_line:string,
+     *   columns: array<int, array{
+     *      unit_id:int,
+     *      unit_name:string,
+     *      entries: array<int, array{
+     *          id:int,
+     *          time_start:string|null,
+     *          description:string,
+     *          has_attachment:bool
+     *      }>
+     *   }>
+     * }>
+     */
+    private function filterDaysWithEntries(array $days): array
+    {
+        return array_values(array_filter($days, function (array $day): bool {
+            foreach ($day['columns'] as $column) {
+                if (count($column['entries']) > 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
     }
 }

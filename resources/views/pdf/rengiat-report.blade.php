@@ -75,58 +75,62 @@
             text-align: right;
         }
 
-        .page-break {
-            page-break-after: always;
+        .day-section {
+            margin-bottom: 10px;
+            page-break-inside: avoid;
         }
     </style>
 </head>
 <body>
-@foreach($days as $day)
+<h1>{{ $title }}</h1>
+
+@if(count($days) === 0)
     <section>
-        <h1>{{ $title }}</h1>
-        <h2>{{ $day['header_line'] }}</h2>
-
-        <table>
-            <thead>
-            <tr>
-                @foreach($day['columns'] as $column)
-                    <th>{{ $column['unit_name'] }}</th>
-                @endforeach
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                @foreach($day['columns'] as $column)
-                    <td>
-                        @if(count($column['entries']) === 0)
-                            <div class="empty">-</div>
-                        @else
-                            <ol>
-                                @foreach($column['entries'] as $entry)
-                                    <li>
-                                        @if($entry['time_start'])
-                                            [{{ $entry['time_start'] }}]
-                                        @endif
-                                        {{ $entry['description'] }}
-                                        @if($entry['has_attachment'])
-                                            [LAMPIRAN]
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ol>
-                        @endif
-                    </td>
-                @endforeach
-            </tr>
-            </tbody>
-        </table>
-
-        <div class="meta">Generated: {{ $generated_at }}</div>
+        <h2>TIDAK ADA DATA KEGIATAN PADA RENTANG TANGGAL TERPILIH</h2>
     </section>
+@else
+    @foreach($days as $day)
+        <section class="day-section">
+            <h2>{{ $day['header_line'] }}</h2>
 
-    @if(! $loop->last)
-        <div class="page-break"></div>
-    @endif
-@endforeach
+            <table>
+                <thead>
+                <tr>
+                    @foreach($day['columns'] as $column)
+                        <th>{{ $column['unit_name'] }}</th>
+                    @endforeach
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    @foreach($day['columns'] as $column)
+                        <td>
+                            @if(count($column['entries']) === 0)
+                                <div class="empty">-</div>
+                            @else
+                                <ol>
+                                    @foreach($column['entries'] as $entry)
+                                        <li>
+                                            @if($entry['time_start'])
+                                                [{{ $entry['time_start'] }}]
+                                            @endif
+                                            {{ $entry['description'] }}
+                                            @if($entry['has_attachment'])
+                                                [LAMPIRAN]
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ol>
+                            @endif
+                        </td>
+                    @endforeach
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    @endforeach
+@endif
+
+<div class="meta">Generated: {{ $generated_at }}</div>
 </body>
 </html>

@@ -94,6 +94,59 @@ class RengiatAuthorizationTest extends TestCase
         $response->assertHeader('Content-Type', 'application/pdf');
     }
 
+    public function test_pdf_export_skips_days_without_any_activity(): void
+    {
+        $startDate = now()->subDay()->toDateString();
+        $endDate = now()->toDateString();
+
+        $unit = Unit::factory()->create([
+            'name' => 'UNIT 1',
+            'order_index' => 1,
+            'active' => true,
+        ]);
+
+        $admin = User::factory()->create([
+            'role' => UserRole::Admin,
+            'unit_id' => null,
+        ]);
+
+        $operator = User::factory()->create([
+            'role' => UserRole::Operator,
+            'unit_id' => $unit->id,
+        ]);
+
+        RengiatEntry::factory()->create([
+            'unit_id' => $unit->id,
+            'entry_date' => $endDate,
+            'description' => 'Aktivitas tersedia hanya di tanggal akhir',
+            'created_by' => $operator->id,
+            'updated_by' => null,
+        ]);
+
+        $this->mock(RengiatPdfExporter::class, function (MockInterface $mock) use ($endDate): void {
+            $mock->shouldReceive('download')
+                ->once()
+                ->withArgs(function (array $viewData) use ($endDate): bool {
+                    $this->assertArrayHasKey('days', $viewData);
+                    $this->assertCount(1, $viewData['days']);
+                    $this->assertSame($endDate, $viewData['days'][0]['date']);
+
+                    return true;
+                })
+                ->andReturn(response('pdf-content', 200, [
+                    'Content-Type' => 'application/pdf',
+                ]));
+        });
+
+        $response = $this->actingAs($admin)->get(route('reports.export', [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ]));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+    }
+
     public function test_audit_logs_created_on_create_update_delete(): void
     {
         $unit = Unit::factory()->create();
