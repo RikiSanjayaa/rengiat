@@ -30,6 +30,7 @@ class UserManagementController extends Controller
                 ->map(fn (User $user) => [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'username' => $user->username,
                     'email' => $user->email,
                     'role' => $user->role?->value,
                     'unit_id' => $user->unit_id,
@@ -72,6 +73,7 @@ class UserManagementController extends Controller
 
         User::create([
             'name' => $validated['name'],
+            'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'],
             'unit_id' => $validated['role'] === UserRole::Operator->value
@@ -103,6 +105,7 @@ class UserManagementController extends Controller
 
         $payload = [
             'name' => $validated['name'],
+            'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'],
             'unit_id' => $validated['role'] === UserRole::Operator->value

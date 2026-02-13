@@ -19,7 +19,8 @@ import type { BreadcrumbItem } from '@/types';
 type UserRecord = {
     id: number;
     name: string;
-    email: string;
+    username: string;
+    email: string | null;
     role: 'super_admin' | 'admin' | 'operator' | 'viewer';
     unit_id: number | null;
     unit_name: string | null;
@@ -46,6 +47,7 @@ type Props = {
 
 type UserForm = {
     name: string;
+    username: string;
     email: string;
     role: UserRecord['role'];
     unit_id: string;
@@ -69,6 +71,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
 
     const form = useForm<UserForm>({
         name: '',
+        username: '',
         email: '',
         role: defaultRole,
         unit_id: '',
@@ -84,6 +87,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
         form.clearErrors();
         form.setData({
             name: '',
+            username: '',
             email: '',
             role: defaultRole,
             unit_id: '',
@@ -98,7 +102,8 @@ export default function UserManagementPage({ users, units, roles }: Props) {
         form.clearErrors();
         form.setData({
             name: user.name,
-            email: user.email,
+            username: user.username,
+            email: user.email ?? '',
             role: user.role,
             unit_id: user.unit_id ? String(user.unit_id) : '',
             password: '',
@@ -169,6 +174,9 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                                     Nama
                                 </th>
                                 <th className="border px-3 py-2 text-left">
+                                    Username
+                                </th>
+                                <th className="border px-3 py-2 text-left">
                                     Email
                                 </th>
                                 <th className="border px-3 py-2 text-left">
@@ -189,7 +197,10 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                                         {user.name}
                                     </td>
                                     <td className="border px-3 py-2">
-                                        {user.email}
+                                        {user.username}
+                                    </td>
+                                    <td className="border px-3 py-2">
+                                        {user.email ?? '-'}
                                     </td>
                                     <td className="border px-3 py-2">
                                         <Badge variant="secondary">
@@ -238,7 +249,7 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                     </DialogHeader>
 
                     <form className="space-y-4" onSubmit={submitForm}>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div className="grid gap-2">
                                 <Label htmlFor="user-name">Nama</Label>
                                 <Input
@@ -252,7 +263,24 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                                 <InputError message={form.errors.name} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="user-email">Email</Label>
+                                <Label htmlFor="user-username">Username</Label>
+                                <Input
+                                    id="user-username"
+                                    value={form.data.username}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'username',
+                                            event.target.value,
+                                        )
+                                    }
+                                    required
+                                />
+                                <InputError message={form.errors.username} />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="user-email">
+                                    Email (Opsional)
+                                </Label>
                                 <Input
                                     id="user-email"
                                     type="email"
@@ -263,7 +291,6 @@ export default function UserManagementPage({ users, units, roles }: Props) {
                                             event.target.value,
                                         )
                                     }
-                                    required
                                 />
                                 <InputError message={form.errors.email} />
                             </div>

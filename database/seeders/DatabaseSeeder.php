@@ -38,9 +38,10 @@ class DatabaseSeeder extends Seeder
             $password = Hash::make('password');
 
             $superAdmin = User::query()->updateOrCreate(
-                ['email' => 'superadmin@rengiat.test'],
+                ['username' => 'superadmin'],
                 [
                     'name' => 'Super Admin',
+                    'email' => 'superadmin@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::SuperAdmin,
                     'unit_id' => null,
@@ -49,9 +50,10 @@ class DatabaseSeeder extends Seeder
             );
 
             User::query()->updateOrCreate(
-                ['email' => 'admin@rengiat.test'],
+                ['username' => 'admin'],
                 [
                     'name' => 'Admin',
+                    'email' => 'admin@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::Admin,
                     'unit_id' => null,
@@ -60,9 +62,10 @@ class DatabaseSeeder extends Seeder
             );
 
             $viewer = User::query()->updateOrCreate(
-                ['email' => 'viewer@rengiat.test'],
+                ['username' => 'viewer'],
                 [
                     'name' => 'Pimpinan',
+                    'email' => 'viewer@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::Viewer,
                     'unit_id' => null,
@@ -72,9 +75,10 @@ class DatabaseSeeder extends Seeder
 
             $operators = $units->mapWithKeys(function (Unit $unit) use ($password): array {
                 $operator = User::query()->updateOrCreate(
-                    ['email' => sprintf('operator%d@rengiat.test', $unit->order_index)],
+                    ['username' => sprintf('operator%d', $unit->order_index)],
                     [
                         'name' => sprintf('Operator Unit %d', $unit->order_index),
+                        'email' => sprintf('operator%d@rengiat.test', $unit->order_index),
                         'password' => $password,
                         'role' => UserRole::Operator,
                         'unit_id' => $unit->id,
@@ -144,9 +148,10 @@ class DatabaseSeeder extends Seeder
             }
 
             User::query()->updateOrCreate(
-                ['email' => 'operator@rengiat.test'],
+                ['username' => 'operator'],
                 [
                     'name' => 'Operator Demo',
+                    'email' => 'operator@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::Operator,
                     'unit_id' => $units->first()?->id,

@@ -80,11 +80,11 @@ npm run dev
 
 All demo users use password: `password`
 
-- `superadmin@rengiat.test` (`super_admin`)
-- `admin@rengiat.test` (`admin`)
-- `viewer@rengiat.test` (`viewer`)
-- `operator@rengiat.test` (`operator`)
-- `operator1@rengiat.test` ... `operator5@rengiat.test` (`operator` per unit)
+- `superadmin` (`super_admin`)
+- `admin` (`admin`)
+- `viewer` (`viewer`)
+- `operator` (`operator`)
+- `operator1` ... `operator5` (`operator` per unit)
 
 ## PDF Engine Notes
 
