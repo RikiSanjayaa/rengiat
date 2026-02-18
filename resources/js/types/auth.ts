@@ -22,6 +22,7 @@ export type Auth = {
         manage_users: boolean;
         manage_units: boolean;
         export_rengiat: boolean;
+        view_audit_logs: boolean;
     };
 };
 

@@ -62,6 +62,7 @@ class HandleInertiaRequests extends Middleware
                     'manage_users' => $user?->can('manage-users') ?? false,
                     'manage_units' => $user?->can('manage-units') ?? false,
                     'export_rengiat' => $user?->can('export-rengiat') ?? false,
+                    'view_audit_logs' => $user?->can('view-audit-logs') ?? false,
                 ],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

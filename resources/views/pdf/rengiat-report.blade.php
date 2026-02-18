@@ -94,6 +94,39 @@
         .day-section + .day-section {
             page-break-before: always;
         }
+
+        .tdd-section {
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+
+        .tdd-block {
+            float: right;
+            text-align: center;
+            width: 360px;
+        }
+
+        .tdd-atas-nama {
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .tdd-jabatan {
+            font-size: 11px;
+            margin-bottom: 60px;
+        }
+
+        .tdd-nama {
+            font-size: 12px;
+            font-weight: bold;
+            color: #000000;
+            text-decoration: underline;
+        }
+
+        .tdd-pangkat {
+            font-size: 11px;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -150,6 +183,17 @@
     @endforeach
 @endif
 
-<div class="meta">Generated: {{ $generated_at }}</div>
+@if(!empty($tdd))
+<section class="tdd-section">
+    <div class="tdd-block">
+        <div class="tdd-atas-nama">An. {{ $tdd['atas_nama'] }}</div>
+        <div class="tdd-jabatan">{{ $tdd['jabatan'] }}</div>
+        <div class="tdd-nama">{{ $tdd['nama_penandatangan'] }}</div>
+        <div class="tdd-pangkat">{{ $tdd['pangkat_nrp'] }}</div>
+    </div>
+    <div style="clear: both;"></div>
+</section>
+@endif
 </body>
 </html>
+

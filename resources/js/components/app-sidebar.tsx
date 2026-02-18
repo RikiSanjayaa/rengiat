@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, FileSpreadsheet, NotebookPen, UsersRound } from 'lucide-react';
+import { Building2, FileSignature, FileSpreadsheet, NotebookPen, ScrollText, UsersRound } from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -47,6 +47,22 @@ export function AppSidebar() {
             title: 'Manajemen Unit',
             href: '/admin/units',
             icon: Building2,
+        });
+    }
+
+    if (auth.abilities.view_audit_logs) {
+        mainNavItems.push({
+            title: 'Log Audit',
+            href: '/admin/audit-logs',
+            icon: ScrollText,
+        });
+    }
+
+    if (auth.abilities.export_rengiat) {
+        mainNavItems.push({
+            title: 'Pengaturan Laporan',
+            href: '/settings/report',
+            icon: FileSignature,
         });
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Rengiat;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Rengiat\ReportFilterRequest;
+use App\Models\ReportSetting;
 use App\Models\Subdit;
 use App\Models\Unit;
 use App\Services\RengiatPdfExporter;
@@ -97,11 +98,19 @@ class ReportGeneratorController extends Controller
                 $filters['end_date']->format('Ymd'),
             );
 
+        $reportSetting = ReportSetting::where('user_id', $request->user()->id)->first();
+
         return $this->pdfExporter->download([
             'title' => $report['title'],
             'units' => $report['units'],
             'days' => $report['days'],
             'generated_at' => now()->setTimezone('Asia/Singapore')->format('d-m-Y H:i:s').' UTC+8',
+            'tdd' => $reportSetting && $reportSetting->hasTdd() ? [
+                'atas_nama' => $reportSetting->atas_nama,
+                'jabatan' => $reportSetting->jabatan,
+                'nama_penandatangan' => $reportSetting->nama_penandatangan,
+                'pangkat_nrp' => $reportSetting->pangkat_nrp,
+            ] : null,
         ], $fileName);
     }
 

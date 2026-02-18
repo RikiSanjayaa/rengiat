@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\UnitManagementController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\DashboardRedirectController;
@@ -34,6 +35,10 @@ Route::middleware('auth')->group(function () {
         Route::post('admin/units', [UnitManagementController::class, 'store'])->name('admin.units.store');
         Route::put('admin/units/{unit}', [UnitManagementController::class, 'update'])->name('admin.units.update');
         Route::delete('admin/units/{unit}', [UnitManagementController::class, 'destroy'])->name('admin.units.destroy');
+    });
+
+    Route::middleware('can:view-audit-logs')->group(function () {
+        Route::get('admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs.index');
     });
 });
 
