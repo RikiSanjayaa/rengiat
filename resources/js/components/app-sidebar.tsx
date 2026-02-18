@@ -1,5 +1,12 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, FileSignature, FileSpreadsheet, NotebookPen, ScrollText, UsersRound } from 'lucide-react';
+import {
+    Building2,
+    FileSignature,
+    FileSpreadsheet,
+    NotebookPen,
+    ScrollText,
+    UsersRound,
+} from 'lucide-react';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -20,7 +27,11 @@ export function AppSidebar() {
 
     const mainNavItems: NavItem[] = [];
 
-    if (auth.user.role === 'operator' || auth.user.role === 'admin' || auth.user.role === 'super_admin') {
+    if (
+        auth.user.role === 'operator' ||
+        auth.user.role === 'admin' ||
+        auth.user.role === 'super_admin'
+    ) {
         mainNavItems.push({
             title: 'Input Harian',
             href: '/daily-input',

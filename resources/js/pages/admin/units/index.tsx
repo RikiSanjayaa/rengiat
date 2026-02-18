@@ -166,9 +166,7 @@ export default function UnitManagementPage({ units }: Props) {
                                                     : 'secondary'
                                             }
                                         >
-                                            {unit.active
-                                                ? 'Aktif'
-                                                : 'Nonaktif'}
+                                            {unit.active ? 'Aktif' : 'Nonaktif'}
                                         </Badge>
                                     </td>
                                     <td className="border px-3 py-2 text-right">

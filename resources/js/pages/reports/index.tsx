@@ -92,7 +92,11 @@ const resolvePresetRange = (
     preset: Exclude<DatePreset, ''>,
 ): { startDate: string; endDate: string } => {
     const today = new Date();
-    const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const base = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+    );
 
     if (preset === 'today') {
         const date = formatDateInput(base);
@@ -162,15 +166,13 @@ export default function ReportGeneratorPage({
     );
     const [keyword, setKeyword] = useState(filters.keyword ?? '');
 
-    const normalizeFilterPayload = (
-        input: {
-            start_date: string;
-            end_date: string;
-            subdit_id: string;
-            unit_id: string;
-            keyword: string;
-        },
-    ) => {
+    const normalizeFilterPayload = (input: {
+        start_date: string;
+        end_date: string;
+        subdit_id: string;
+        unit_id: string;
+        keyword: string;
+    }) => {
         const normalizedStartDate = input.start_date.trim();
         const normalizedEndDate = input.end_date.trim();
         const normalizedSubditId = input.subdit_id.trim();
@@ -262,7 +264,9 @@ export default function ReportGeneratorPage({
                     <div className="space-y-4">
                         <div className="grid gap-4 md:grid-cols-3 md:items-end">
                             <div className="grid gap-2">
-                                <Label htmlFor="date-preset">Preset Tanggal</Label>
+                                <Label htmlFor="date-preset">
+                                    Preset Tanggal
+                                </Label>
                                 <select
                                     id="date-preset"
                                     value={datePreset}
@@ -271,14 +275,24 @@ export default function ReportGeneratorPage({
                                 >
                                     <option value="">Pilih preset</option>
                                     <option value="today">Hari Ini</option>
-                                    <option value="this_week">Minggu Ini</option>
-                                    <option value="last_week">Minggu Lalu</option>
-                                    <option value="this_month">Bulan Ini</option>
-                                    <option value="last_month">Bulan Lalu</option>
+                                    <option value="this_week">
+                                        Minggu Ini
+                                    </option>
+                                    <option value="last_week">
+                                        Minggu Lalu
+                                    </option>
+                                    <option value="this_month">
+                                        Bulan Ini
+                                    </option>
+                                    <option value="last_month">
+                                        Bulan Lalu
+                                    </option>
                                 </select>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="start-date">Tanggal Mulai</Label>
+                                <Label htmlFor="start-date">
+                                    Tanggal Mulai
+                                </Label>
                                 <Input
                                     id="start-date"
                                     name="start_date"
@@ -320,7 +334,10 @@ export default function ReportGeneratorPage({
                                 >
                                     <option value="">Semua Subdit</option>
                                     {filterSubdits.map((subdit) => (
-                                        <option key={subdit.id} value={subdit.id}>
+                                        <option
+                                            key={subdit.id}
+                                            value={subdit.id}
+                                        >
                                             {subdit.name}
                                         </option>
                                     ))}
@@ -370,7 +387,7 @@ export default function ReportGeneratorPage({
                 </section>
 
                 <section className="rounded-xl border bg-card p-4">
-                    <h2 className="mb-4 text-center text-sm font-semibold uppercase tracking-wide">
+                    <h2 className="mb-4 text-center text-sm font-semibold tracking-wide uppercase">
                         {report.title}
                     </h2>
 
@@ -389,21 +406,25 @@ export default function ReportGeneratorPage({
                                     <div className="overflow-x-auto">
                                         <table
                                             className="w-full border-collapse border text-sm"
-                                            style={{ minWidth: `${tableMinWidth}px` }}
+                                            style={{
+                                                minWidth: `${tableMinWidth}px`,
+                                            }}
                                         >
                                             <thead>
                                                 <tr>
                                                     <th className="w-48 border bg-muted px-3 py-2 text-left text-xs uppercase">
                                                         Subdit
                                                     </th>
-                                                    {report.units.map((unit) => (
-                                                        <th
-                                                            key={unit.id}
-                                                            className="border bg-muted px-3 py-2 text-left text-xs uppercase"
-                                                        >
-                                                            {unit.name}
-                                                        </th>
-                                                    ))}
+                                                    {report.units.map(
+                                                        (unit) => (
+                                                            <th
+                                                                key={unit.id}
+                                                                className="border bg-muted px-3 py-2 text-left text-xs uppercase"
+                                                            >
+                                                                {unit.name}
+                                                            </th>
+                                                        ),
+                                                    )}
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -412,44 +433,47 @@ export default function ReportGeneratorPage({
                                                         <td className="border px-3 py-2 align-top font-semibold">
                                                             {row.subdit_name}
                                                         </td>
-                                                        {row.cells.map((cell) => (
-                                                            <td
-                                                                key={`${row.subdit_id}-${cell.unit_id}`}
-                                                                className="h-24 border px-3 py-2 align-top"
-                                                            >
-                                                                {cell.entries
-                                                                    .length ===
-                                                                0 ? (
-                                                                    <div className="text-center text-muted-foreground">
-                                                                        -
-                                                                    </div>
-                                                                ) : (
-                                                                    <ol className="list-decimal space-y-1 pl-5">
-                                                                        {cell.entries.map(
-                                                                            (
-                                                                                entry,
-                                                                            ) => (
-                                                                                <li
-                                                                                    key={
-                                                                                        entry.id
-                                                                                    }
-                                                                                >
-                                                                                    {entry.time_start
-                                                                                        ? `[${entry.time_start}] `
-                                                                                        : ''}
-                                                                                    {
-                                                                                        entry.description
-                                                                                    }
-                                                                                    {entry.has_attachment
-                                                                                        ? ' [LAMPIRAN]'
-                                                                                        : ''}
-                                                                                </li>
-                                                                            ),
-                                                                        )}
-                                                                    </ol>
-                                                                )}
-                                                            </td>
-                                                        ))}
+                                                        {row.cells.map(
+                                                            (cell) => (
+                                                                <td
+                                                                    key={`${row.subdit_id}-${cell.unit_id}`}
+                                                                    className="h-24 border px-3 py-2 align-top"
+                                                                >
+                                                                    {cell
+                                                                        .entries
+                                                                        .length ===
+                                                                    0 ? (
+                                                                        <div className="text-center text-muted-foreground">
+                                                                            -
+                                                                        </div>
+                                                                    ) : (
+                                                                        <ol className="list-decimal space-y-1 pl-5">
+                                                                            {cell.entries.map(
+                                                                                (
+                                                                                    entry,
+                                                                                ) => (
+                                                                                    <li
+                                                                                        key={
+                                                                                            entry.id
+                                                                                        }
+                                                                                    >
+                                                                                        {entry.time_start
+                                                                                            ? `[${entry.time_start}] `
+                                                                                            : ''}
+                                                                                        {
+                                                                                            entry.description
+                                                                                        }
+                                                                                        {entry.has_attachment
+                                                                                            ? ' [LAMPIRAN]'
+                                                                                            : ''}
+                                                                                    </li>
+                                                                                ),
+                                                                            )}
+                                                                        </ol>
+                                                                    )}
+                                                                </td>
+                                                            ),
+                                                        )}
                                                     </tr>
                                                 ))}
                                             </tbody>

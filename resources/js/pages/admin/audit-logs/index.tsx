@@ -61,7 +61,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const actionLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+const actionLabels: Record<
+    string,
+    {
+        label: string;
+        variant: 'default' | 'secondary' | 'destructive' | 'outline';
+    }
+> = {
     created: { label: 'Dibuat', variant: 'default' },
     updated: { label: 'Diperbarui', variant: 'secondary' },
     deleted: { label: 'Dihapus', variant: 'destructive' },
@@ -93,8 +99,16 @@ function renderValues(values: Record<string, unknown> | null): React.ReactNode {
         <div className="space-y-1">
             {Object.entries(values).map(([key, val]) => (
                 <div key={key} className="flex gap-2 text-xs">
-                    <span className="font-medium text-muted-foreground min-w-[100px]">{key}:</span>
-                    <span className="break-all">{val === null ? <em className="text-muted-foreground">null</em> : String(val)}</span>
+                    <span className="min-w-[100px] font-medium text-muted-foreground">
+                        {key}:
+                    </span>
+                    <span className="break-all">
+                        {val === null ? (
+                            <em className="text-muted-foreground">null</em>
+                        ) : (
+                            String(val)
+                        )}
+                    </span>
                 </div>
             ))}
         </div>
@@ -133,7 +147,8 @@ export default function AuditLogPage({ logs, filters }: Props) {
         router.get('/admin/audit-logs', {}, { preserveState: true });
     };
 
-    const hasActiveFilters = search || actionFilter || typeFilter || dateFrom || dateTo;
+    const hasActiveFilters =
+        search || actionFilter || typeFilter || dateFrom || dateTo;
 
     const toggleRow = (id: number) => {
         setExpandedRow(expandedRow === id ? null : id);
@@ -160,7 +175,7 @@ export default function AuditLogPage({ logs, filters }: Props) {
                 >
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 placeholder="Cari nama user..."
                                 value={search}
@@ -230,18 +245,31 @@ export default function AuditLogPage({ logs, filters }: Props) {
                     <table className="w-full border-collapse text-sm">
                         <thead>
                             <tr className="bg-muted/60">
-                                <th className="border px-3 py-2 text-left w-10"></th>
-                                <th className="border px-3 py-2 text-left">Waktu</th>
-                                <th className="border px-3 py-2 text-left">User</th>
-                                <th className="border px-3 py-2 text-left">Aksi</th>
-                                <th className="border px-3 py-2 text-left">Tipe</th>
-                                <th className="border px-3 py-2 text-left">ID Objek</th>
+                                <th className="w-10 border px-3 py-2 text-left"></th>
+                                <th className="border px-3 py-2 text-left">
+                                    Waktu
+                                </th>
+                                <th className="border px-3 py-2 text-left">
+                                    User
+                                </th>
+                                <th className="border px-3 py-2 text-left">
+                                    Aksi
+                                </th>
+                                <th className="border px-3 py-2 text-left">
+                                    Tipe
+                                </th>
+                                <th className="border px-3 py-2 text-left">
+                                    ID Objek
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             {logs.data.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="border px-3 py-8 text-center text-muted-foreground">
+                                    <td
+                                        colSpan={6}
+                                        className="border px-3 py-8 text-center text-muted-foreground"
+                                    >
                                         Belum ada log audit.
                                     </td>
                                 </tr>
@@ -257,14 +285,14 @@ export default function AuditLogPage({ logs, filters }: Props) {
                                     <>
                                         <tr
                                             key={log.id}
-                                            className="cursor-pointer hover:bg-muted/30 transition-colors"
+                                            className="cursor-pointer transition-colors hover:bg-muted/30"
                                             onClick={() => toggleRow(log.id)}
                                         >
                                             <td className="border px-3 py-2 text-center">
                                                 {isExpanded ? (
-                                                    <ChevronUp className="h-4 w-4 mx-auto text-muted-foreground" />
+                                                    <ChevronUp className="mx-auto h-4 w-4 text-muted-foreground" />
                                                 ) : (
-                                                    <ChevronDown className="h-4 w-4 mx-auto text-muted-foreground" />
+                                                    <ChevronDown className="mx-auto h-4 w-4 text-muted-foreground" />
                                                 )}
                                             </td>
                                             <td className="border px-3 py-2 whitespace-nowrap">
@@ -273,22 +301,28 @@ export default function AuditLogPage({ logs, filters }: Props) {
                                             <td className="border px-3 py-2">
                                                 <div>
                                                     <span className="font-medium">
-                                                        {log.actor?.name ?? 'Sistem'}
+                                                        {log.actor?.name ??
+                                                            'Sistem'}
                                                     </span>
                                                     {log.actor && (
                                                         <span className="ml-1 text-xs text-muted-foreground">
-                                                            @{log.actor.username}
+                                                            @
+                                                            {log.actor.username}
                                                         </span>
                                                     )}
                                                 </div>
                                             </td>
                                             <td className="border px-3 py-2">
-                                                <Badge variant={actionInfo.variant}>
+                                                <Badge
+                                                    variant={actionInfo.variant}
+                                                >
                                                     {actionInfo.label}
                                                 </Badge>
                                             </td>
                                             <td className="border px-3 py-2">
-                                                {typeLabels[log.auditable_type] ?? log.auditable_type}
+                                                {typeLabels[
+                                                    log.auditable_type
+                                                ] ?? log.auditable_type}
                                             </td>
                                             <td className="border px-3 py-2 font-mono text-xs">
                                                 #{log.auditable_id}
@@ -296,22 +330,29 @@ export default function AuditLogPage({ logs, filters }: Props) {
                                         </tr>
                                         {isExpanded && (
                                             <tr key={`${log.id}-detail`}>
-                                                <td colSpan={6} className="border bg-muted/20 px-4 py-3">
+                                                <td
+                                                    colSpan={6}
+                                                    className="border bg-muted/20 px-4 py-3"
+                                                >
                                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                                         <div>
-                                                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                            <h4 className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                                                                 Nilai Lama
                                                             </h4>
                                                             <div className="rounded-md border bg-background p-3">
-                                                                {renderValues(log.old_values)}
+                                                                {renderValues(
+                                                                    log.old_values,
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <div>
-                                                            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                            <h4 className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                                                                 Nilai Baru
                                                             </h4>
                                                             <div className="rounded-md border bg-background p-3">
-                                                                {renderValues(log.new_values)}
+                                                                {renderValues(
+                                                                    log.new_values,
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -329,23 +370,35 @@ export default function AuditLogPage({ logs, filters }: Props) {
                 {logs.last_page > 1 && (
                     <div className="flex items-center justify-between rounded-xl border bg-card px-4 py-3">
                         <p className="text-sm text-muted-foreground">
-                            Menampilkan {(logs.current_page - 1) * logs.per_page + 1} -{' '}
-                            {Math.min(logs.current_page * logs.per_page, logs.total)} dari{' '}
-                            {logs.total} log
+                            Menampilkan{' '}
+                            {(logs.current_page - 1) * logs.per_page + 1} -{' '}
+                            {Math.min(
+                                logs.current_page * logs.per_page,
+                                logs.total,
+                            )}{' '}
+                            dari {logs.total} log
                         </p>
                         <div className="flex gap-1">
                             {logs.links.map((link, idx) => (
                                 <Button
                                     key={idx}
                                     size="sm"
-                                    variant={link.active ? 'default' : 'outline'}
+                                    variant={
+                                        link.active ? 'default' : 'outline'
+                                    }
                                     disabled={!link.url}
                                     onClick={() => {
                                         if (link.url) {
-                                            router.get(link.url, {}, { preserveState: true });
+                                            router.get(
+                                                link.url,
+                                                {},
+                                                { preserveState: true },
+                                            );
                                         }
                                     }}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    dangerouslySetInnerHTML={{
+                                        __html: link.label,
+                                    }}
                                     className="min-w-[36px]"
                                 />
                             ))}

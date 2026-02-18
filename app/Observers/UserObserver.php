@@ -24,8 +24,14 @@ class UserObserver
 
     public function created(User $user): void
     {
+        $actorId = Auth::id();
+
+        if ($actorId === null) {
+            return;
+        }
+
         AuditLog::create([
-            'actor_user_id' => Auth::id() ?? $user->id,
+            'actor_user_id' => $actorId,
             'action' => AuditLogAction::Created,
             'auditable_type' => 'user',
             'auditable_id' => $user->id,
@@ -37,6 +43,12 @@ class UserObserver
 
     public function updated(User $user): void
     {
+        $actorId = Auth::id();
+
+        if ($actorId === null) {
+            return;
+        }
+
         $changes = Arr::only($user->getChanges(), $this->auditableFields);
 
         if ($changes === []) {
@@ -50,7 +62,7 @@ class UserObserver
         }
 
         AuditLog::create([
-            'actor_user_id' => Auth::id() ?? $user->id,
+            'actor_user_id' => $actorId,
             'action' => AuditLogAction::Updated,
             'auditable_type' => 'user',
             'auditable_id' => $user->id,

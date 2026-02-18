@@ -28,7 +28,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function ReportSettings({ reportSetting }: PageProps) {
     const [atasNama, setAtasNama] = useState(reportSetting.atas_nama);
     const [jabatan, setJabatan] = useState(reportSetting.jabatan);
-    const [namaPenandatangan, setNamaPenandatangan] = useState(reportSetting.nama_penandatangan);
+    const [namaPenandatangan, setNamaPenandatangan] = useState(
+        reportSetting.nama_penandatangan,
+    );
     const [pangkatNrp, setPangkatNrp] = useState(reportSetting.pangkat_nrp);
     const [processing, setProcessing] = useState(false);
     const [recentlySuccessful, setRecentlySuccessful] = useState(false);
@@ -68,12 +70,16 @@ export default function ReportSettings({ reportSetting }: PageProps) {
                 <div className="rounded-xl border bg-card p-4">
                     <h1 className="font-semibold">Pengaturan Laporan</h1>
                     <p className="text-sm text-muted-foreground">
-                        Atur format tanda tangan digital (TDD) yang akan muncul pada PDF laporan yang Anda ekspor.
+                        Atur format tanda tangan digital (TDD) yang akan muncul
+                        pada PDF laporan yang Anda ekspor.
                     </p>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="rounded-xl border bg-card p-4 space-y-5">
+                <form
+                    onSubmit={handleSubmit}
+                    className="space-y-5 rounded-xl border bg-card p-4"
+                >
                     <div className="grid gap-2">
                         <Label htmlFor="atas_nama">Atas Nama</Label>
                         <Input
@@ -100,11 +106,15 @@ export default function ReportSettings({ reportSetting }: PageProps) {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="nama_penandatangan">Nama Penandatangan</Label>
+                        <Label htmlFor="nama_penandatangan">
+                            Nama Penandatangan
+                        </Label>
                         <Input
                             id="nama_penandatangan"
                             value={namaPenandatangan}
-                            onChange={(e) => setNamaPenandatangan(e.target.value)}
+                            onChange={(e) =>
+                                setNamaPenandatangan(e.target.value)
+                            }
                             placeholder="Contoh: BAMBANG PAMUNGKAS,S.I.K.,M.M."
                             required
                         />
@@ -122,9 +132,7 @@ export default function ReportSettings({ reportSetting }: PageProps) {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <Button disabled={processing}>
-                            Simpan
-                        </Button>
+                        <Button disabled={processing}>Simpan</Button>
 
                         <Transition
                             show={recentlySuccessful}
@@ -133,9 +141,7 @@ export default function ReportSettings({ reportSetting }: PageProps) {
                             leave="transition ease-in-out"
                             leaveTo="opacity-0"
                         >
-                            <p className="text-sm text-green-600">
-                                Tersimpan
-                            </p>
+                            <p className="text-sm text-green-600">Tersimpan</p>
                         </Transition>
                     </div>
                 </form>
@@ -143,7 +149,7 @@ export default function ReportSettings({ reportSetting }: PageProps) {
                 {/* Preview */}
                 {hasContent && (
                     <div className="rounded-xl border bg-card p-4">
-                        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <p className="mb-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                             Preview TDD pada PDF
                         </p>
                         <div className="rounded-lg border bg-white p-6 dark:bg-neutral-900">

@@ -190,7 +190,9 @@ export default function DailyInputPage({
     const submitForm: FormEventHandler<HTMLFormElement> = (event) => {
         event.preventDefault();
 
-        const endpoint = editingEntry ? `/entries/${editingEntry.id}` : '/entries';
+        const endpoint = editingEntry
+            ? `/entries/${editingEntry.id}`
+            : '/entries';
 
         form.transform((data) => ({
             ...data,
@@ -312,27 +314,30 @@ export default function DailyInputPage({
                                     {entry.unit_name ?? '-'}
                                 </span>
                             </div>
-                            <p className="text-sm leading-6">{entry.description}</p>
+                            <p className="text-sm leading-6">
+                                {entry.description}
+                            </p>
 
-                            {attachmentsEnabled && entry.attachments.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {entry.attachments.map((attachment) => (
-                                        <a
-                                            key={attachment.id}
-                                            href={attachment.url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="block overflow-hidden rounded-md border"
-                                        >
-                                            <img
-                                                src={attachment.url}
-                                                alt="Attachment"
-                                                className="h-20 w-20 object-cover"
-                                            />
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
+                            {attachmentsEnabled &&
+                                entry.attachments.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {entry.attachments.map((attachment) => (
+                                            <a
+                                                key={attachment.id}
+                                                href={attachment.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="block overflow-hidden rounded-md border"
+                                            >
+                                                <img
+                                                    src={attachment.url}
+                                                    alt="Attachment"
+                                                    className="h-20 w-20 object-cover"
+                                                />
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
 
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>
@@ -389,7 +394,10 @@ export default function DailyInputPage({
                                     type="date"
                                     value={form.data.entry_date}
                                     onChange={(event) =>
-                                        form.setData('entry_date', event.target.value)
+                                        form.setData(
+                                            'entry_date',
+                                            event.target.value,
+                                        )
                                     }
                                     required
                                 />
@@ -401,13 +409,19 @@ export default function DailyInputPage({
                                     id="form-subdit-id"
                                     value={form.data.subdit_id}
                                     onChange={(event) =>
-                                        form.setData('subdit_id', event.target.value)
+                                        form.setData(
+                                            'subdit_id',
+                                            event.target.value,
+                                        )
                                     }
                                     className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                                     required
                                 >
                                     {subdits.map((subdit) => (
-                                        <option key={subdit.id} value={subdit.id}>
+                                        <option
+                                            key={subdit.id}
+                                            value={subdit.id}
+                                        >
                                             {subdit.name}
                                         </option>
                                     ))}
@@ -420,7 +434,10 @@ export default function DailyInputPage({
                                     id="form-unit-id"
                                     value={form.data.unit_id}
                                     onChange={(event) =>
-                                        form.setData('unit_id', event.target.value)
+                                        form.setData(
+                                            'unit_id',
+                                            event.target.value,
+                                        )
                                     }
                                     className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                                     required
@@ -446,7 +463,10 @@ export default function DailyInputPage({
                                     type="time"
                                     value={form.data.time_start}
                                     onChange={(event) =>
-                                        form.setData('time_start', event.target.value)
+                                        form.setData(
+                                            'time_start',
+                                            event.target.value,
+                                        )
                                     }
                                 />
                                 <InputError message={form.errors.time_start} />
@@ -459,7 +479,10 @@ export default function DailyInputPage({
                                 id="form-description"
                                 value={form.data.description}
                                 onChange={(event) =>
-                                    form.setData('description', event.target.value)
+                                    form.setData(
+                                        'description',
+                                        event.target.value,
+                                    )
                                 }
                                 className="min-h-32 rounded-md border border-input bg-background px-3 py-2 text-sm"
                                 required
