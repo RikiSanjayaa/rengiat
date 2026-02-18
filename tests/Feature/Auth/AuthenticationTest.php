@@ -32,7 +32,7 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
-    public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()
+    public function test_users_with_two_factor_data_can_still_authenticate_when_feature_is_disabled()
     {
         if (! Features::canManageTwoFactorAuthentication()) {
             $this->markTestSkipped('Two-factor authentication is not enabled.');
@@ -56,9 +56,8 @@ class AuthenticationTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('two-factor.login'));
-        $response->assertSessionHas('login.id', $user->id);
-        $this->assertGuest();
+        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_users_can_not_authenticate_with_invalid_password()
