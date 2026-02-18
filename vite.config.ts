@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
+const wayfinderCommand = process.env.VITE_WAYFINDER_COMMAND ?? 'php artisan wayfinder:generate';
+
 export default defineConfig({
     plugins: [
         laravel({
@@ -19,6 +21,7 @@ export default defineConfig({
         tailwindcss(),
         wayfinder({
             formVariants: true,
+            command: wayfinderCommand,
         }),
     ],
     esbuild: {
