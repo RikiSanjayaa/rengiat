@@ -49,22 +49,14 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null
-        );
+        Password::defaults(fn(): Password => Password::min(8));
     }
 
     protected function configureAuthorization(): void
     {
-        Gate::define('export-rengiat', fn (User $user): bool => $user->canExportRengiat());
-        Gate::define('manage-users', fn (User $user): bool => $user->isAdminLike());
-        Gate::define('manage-units', fn (User $user): bool => $user->isAdminLike());
-        Gate::define('view-audit-logs', fn (User $user): bool => $user->isAdminLike());
+        Gate::define('export-rengiat', fn(User $user): bool => $user->canExportRengiat());
+        Gate::define('manage-users', fn(User $user): bool => $user->isAdminLike());
+        Gate::define('manage-units', fn(User $user): bool => $user->isAdminLike());
+        Gate::define('view-audit-logs', fn(User $user): bool => $user->isAdminLike());
     }
 }
