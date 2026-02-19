@@ -1,27 +1,26 @@
 name: deploy-homeserver
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - tests
     branches:
       - main
-      - master
+    types:
+      - completed
   workflow_dispatch:
-    inputs:
-      force_rebuild:
-        description: Force rebuild and migration even when no app code changed
-        required: false
-        type: boolean
-        default: false
+    {}
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-homeserver-${{ github.ref }}
+  group: deploy-homeserver-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: true
 
 jobs:
   deploy:
+    if: (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') || (github.event_name == 'workflow_dispatch' && github.ref_name == 'main')
     runs-on: ubuntu-latest
 
     steps:
@@ -29,88 +28,29 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Detect changed paths
-        if: github.event_name == 'push'
-        id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            frontend:
-              - 'resources/**'
-              - 'public/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'vite.config.ts'
-              - 'tsconfig.json'
-              - 'eslint.config.js'
-            backend:
-              - 'app/**'
-              - 'bootstrap/**'
-              - 'config/**'
-              - 'database/**'
-              - 'routes/**'
-              - 'artisan'
-              - 'composer.json'
-              - 'composer.lock'
-            infra:
-              - 'docker/**'
-              - 'docker-compose.yml'
-              - 'scripts/deploy-homeserver.sh'
-              - '.env.example'
-
-      - name: Resolve deployment flags
-        id: flags
+      - name: Resolve deploy branch
+        id: context
         env:
           EVENT_NAME: ${{ github.event_name }}
-          FRONTEND_FILTER: ${{ steps.changes.outputs.frontend }}
-          BACKEND_FILTER: ${{ steps.changes.outputs.backend }}
-          INFRA_FILTER: ${{ steps.changes.outputs.infra }}
-          FORCE_REBUILD_INPUT: ${{ github.event.inputs.force_rebuild || 'false' }}
+          WORKFLOW_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch || '' }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          frontend="false"
-          backend="false"
-          infra="false"
+          branch="${REF_NAME}"
 
-          if [[ "${EVENT_NAME}" == "push" ]]; then
-            frontend="${FRONTEND_FILTER}"
-            backend="${BACKEND_FILTER}"
-            infra="${INFRA_FILTER}"
-          else
-            # Manual runs default to full deploy.
-            frontend="true"
-            backend="true"
+          if [[ "${EVENT_NAME}" == "workflow_run" ]]; then
+            branch="${WORKFLOW_HEAD_BRANCH}"
           fi
 
-          if [[ "${infra}" == "true" ]]; then
-            frontend="true"
-            backend="true"
-          fi
-
-          force="${FORCE_REBUILD_INPUT}"
-          deploy="false"
-
-          if [[ "${frontend}" == "true" || "${backend}" == "true" || "${force}" == "true" ]]; then
-            deploy="true"
-          fi
-
-          echo "frontend_changed=${frontend}" >> "${GITHUB_OUTPUT}"
-          echo "backend_changed=${backend}" >> "${GITHUB_OUTPUT}"
-          echo "force_rebuild=${force}" >> "${GITHUB_OUTPUT}"
-          echo "deploy=${deploy}" >> "${GITHUB_OUTPUT}"
-
-      - name: Skip deploy
-        if: steps.flags.outputs.deploy != 'true'
-        run: echo "No frontend/backend/infra changes detected. Skipping deployment."
+          echo "deploy_branch=${branch}" >> "${GITHUB_OUTPUT}"
 
       - name: Connect to Tailscale
-        if: steps.flags.outputs.deploy == 'true'
         uses: tailscale/github-action@v3
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
       - name: Configure SSH
-        if: steps.flags.outputs.deploy == 'true'
         env:
           HOMESERVER_SSH_PRIVATE_KEY: ${{ secrets.HOMESERVER_SSH_PRIVATE_KEY }}
           HOMESERVER_HOST: ${{ secrets.HOMESERVER_HOST }}
@@ -137,15 +77,11 @@ jobs:
           ssh-keyscan -H "${HOMESERVER_HOST}" >> ~/.ssh/known_hosts
 
       - name: Deploy to homeserver
-        if: steps.flags.outputs.deploy == 'true'
         env:
           HOMESERVER_HOST: ${{ secrets.HOMESERVER_HOST }}
           HOMESERVER_USER: ${{ secrets.HOMESERVER_USER }}
           HOMESERVER_APP_DIR: ${{ secrets.HOMESERVER_APP_DIR }}
-          DEPLOY_BRANCH: ${{ github.ref_name }}
-          FRONTEND_CHANGED: ${{ steps.flags.outputs.frontend_changed }}
-          BACKEND_CHANGED: ${{ steps.flags.outputs.backend_changed }}
-          FORCE_REBUILD: ${{ steps.flags.outputs.force_rebuild }}
+          DEPLOY_BRANCH: ${{ steps.context.outputs.deploy_branch }}
         run: |
           ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes "${HOMESERVER_USER}@${HOMESERVER_HOST}" \
-            "APP_DIR='${HOMESERVER_APP_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' FRONTEND_CHANGED='${FRONTEND_CHANGED}' BACKEND_CHANGED='${BACKEND_CHANGED}' FORCE_REBUILD='${FORCE_REBUILD}' bash '${HOMESERVER_APP_DIR}/scripts/deploy-homeserver.sh'"
+            "APP_DIR='${HOMESERVER_APP_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' bash '${HOMESERVER_APP_DIR}/scripts/deploy-homeserver.sh'"
