@@ -40,7 +40,6 @@ class UserManagementAuthorizationTest extends TestCase
             ->put(route('admin.users.update', $target), [
                 'name' => $target->name,
                 'username' => $target->username,
-                'email' => $target->email,
                 'role' => UserRole::SuperAdmin->value,
                 'subdit_id' => null,
                 'password' => '',

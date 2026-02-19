@@ -21,7 +21,6 @@ type UserRecord = {
     id: number;
     name: string;
     username: string;
-    email: string | null;
     role: 'super_admin' | 'admin' | 'operator' | 'viewer';
     subdit_id: number | null;
     subdit_name: string | null;
@@ -49,7 +48,6 @@ type Props = {
 type UserForm = {
     name: string;
     username: string;
-    email: string;
     role: UserRecord['role'];
     subdit_id: string;
     password: string;
@@ -75,7 +73,6 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
     const form = useForm<UserForm>({
         name: '',
         username: '',
-        email: '',
         role: defaultRole,
         subdit_id: '',
         password: '',
@@ -91,7 +88,6 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
         form.setData({
             name: '',
             username: '',
-            email: '',
             role: defaultRole,
             subdit_id: '',
             password: '',
@@ -106,7 +102,6 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
         form.setData({
             name: user.name,
             username: user.username,
-            email: user.email ?? '',
             role: user.role,
             subdit_id: user.subdit_id ? String(user.subdit_id) : '',
             password: '',
@@ -189,9 +184,6 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
                                     Username
                                 </th>
                                 <th className="border px-3 py-2 text-left">
-                                    Email
-                                </th>
-                                <th className="border px-3 py-2 text-left">
                                     Role
                                 </th>
                                 <th className="border px-3 py-2 text-left">
@@ -210,9 +202,6 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
                                     </td>
                                     <td className="border px-3 py-2">
                                         {user.username}
-                                    </td>
-                                    <td className="border px-3 py-2">
-                                        {user.email ?? '-'}
                                     </td>
                                     <td className="border px-3 py-2">
                                         <Badge variant="secondary">
@@ -261,7 +250,7 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
                     </DialogHeader>
 
                     <form className="space-y-4" onSubmit={submitForm}>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="grid gap-2">
                                 <Label htmlFor="user-name">Nama</Label>
                                 <Input
@@ -288,23 +277,6 @@ export default function UserManagementPage({ users, subdits, roles }: Props) {
                                     required
                                 />
                                 <InputError message={form.errors.username} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="user-email">
-                                    Email (Opsional)
-                                </Label>
-                                <Input
-                                    id="user-email"
-                                    type="email"
-                                    value={form.data.email}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'email',
-                                            event.target.value,
-                                        )
-                                    }
-                                />
-                                <InputError message={form.errors.email} />
                             </div>
                         </div>
 

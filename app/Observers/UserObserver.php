@@ -16,7 +16,6 @@ class UserObserver
     private array $auditableFields = [
         'name',
         'username',
-        'email',
         'role',
         'subdit_id',
         'unit_id',

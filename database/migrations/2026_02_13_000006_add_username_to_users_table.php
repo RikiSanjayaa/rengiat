@@ -20,7 +20,7 @@ return new class extends Migration
         $usedUsernames = [];
 
         DB::table('users')
-            ->select(['id', 'email', 'username'])
+            ->select(['id', 'name', 'username'])
             ->orderBy('id')
             ->get()
             ->each(function (object $user) use (&$usedUsernames): void {
@@ -30,8 +30,7 @@ return new class extends Migration
                     return;
                 }
 
-                $baseUsername = Str::of((string) $user->email)
-                    ->before('@')
+                $baseUsername = Str::of((string) $user->name)
                     ->lower()
                     ->replaceMatches('/[^a-z0-9_]/', '_')
                     ->trim('_')

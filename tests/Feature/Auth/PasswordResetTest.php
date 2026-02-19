@@ -14,14 +14,13 @@ class PasswordResetTest extends TestCase
     public function test_reset_password_routes_are_unavailable(): void
     {
         Notification::fake();
-        $user = User::factory()->create();
+        User::factory()->create();
 
         $this->get('/forgot-password')->assertNotFound();
-        $this->post('/forgot-password', ['email' => $user->email])->assertNotFound();
+        $this->post('/forgot-password', [])->assertNotFound();
         $this->get('/reset-password/test-token')->assertNotFound();
         $this->post('/reset-password', [
             'token' => 'test-token',
-            'email' => $user->email,
             'password' => 'password',
             'password_confirmation' => 'password',
         ])->assertNotFound();

@@ -75,12 +75,10 @@ class DatabaseSeeder extends Seeder
                 ['username' => 'superadmin'],
                 [
                     'name' => 'Super Admin',
-                    'email' => 'superadmin@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::SuperAdmin,
                     'subdit_id' => null,
                     'unit_id' => null,
-                    'email_verified_at' => now(),
                 ],
             );
 
@@ -88,12 +86,10 @@ class DatabaseSeeder extends Seeder
                 ['username' => 'admin'],
                 [
                     'name' => 'Admin',
-                    'email' => 'admin@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::Admin,
                     'subdit_id' => null,
                     'unit_id' => null,
-                    'email_verified_at' => now(),
                 ],
             );
 
@@ -101,12 +97,10 @@ class DatabaseSeeder extends Seeder
                 ['username' => 'viewer'],
                 [
                     'name' => 'Pimpinan',
-                    'email' => 'viewer@rengiat.test',
                     'password' => $password,
                     'role' => UserRole::Viewer,
                     'subdit_id' => null,
                     'unit_id' => null,
-                    'email_verified_at' => now(),
                 ],
             );
 
@@ -129,12 +123,10 @@ class DatabaseSeeder extends Seeder
                         ['username' => $username],
                         [
                             'name' => sprintf('Operator %s', $subdit->name),
-                            'email' => sprintf('%s@rengiat.test', $username),
                             'password' => $password,
                             'role' => UserRole::Operator,
                             'subdit_id' => $subdit->id,
                             'unit_id' => null,
-                            'email_verified_at' => now(),
                         ],
                     );
 

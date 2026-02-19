@@ -30,7 +30,6 @@ class ProfileUpdateTest extends TestCase
             ->patch(route('profile.update'), [
                 'name' => 'Test User',
                 'username' => 'test_user',
-                'email' => 'test@example.com',
             ]);
 
         $response
@@ -41,27 +40,23 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test_user', $user->username);
-        $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
     }
 
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
+    public function test_profile_information_update_rejects_duplicate_username()
     {
         $user = User::factory()->create();
+        $existingUser = User::factory()->create([
+            'username' => 'existing_user',
+        ]);
 
         $response = $this
             ->actingAs($user)
             ->patch(route('profile.update'), [
                 'name' => 'Test User',
-                'username' => 'test_user',
-                'email' => $user->email,
+                'username' => $existingUser->username,
             ]);
 
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('profile.edit'));
-
-        $this->assertNotNull($user->refresh()->email_verified_at);
+        $response->assertSessionHasErrors('username');
     }
 
     public function test_user_can_delete_their_account()

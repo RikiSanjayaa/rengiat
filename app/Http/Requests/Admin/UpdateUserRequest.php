@@ -27,7 +27,6 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:120'],
             'username' => ['required', 'string', 'max:120', 'alpha_dash:ascii', 'lowercase', Rule::unique('users', 'username')->ignore($user->id)],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', new Enum(UserRole::class)],
             'subdit_id' => [
                 Rule::requiredIf($this->input('role') === UserRole::Operator->value),

@@ -31,7 +31,6 @@ class UserManagementController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'username' => $user->username,
-                    'email' => $user->email,
                     'role' => $user->role?->value,
                     'subdit_id' => $user->subdit_id,
                     'subdit_name' => $user->subdit?->name,
@@ -73,7 +72,6 @@ class UserManagementController extends Controller
         User::create([
             'name' => $validated['name'],
             'username' => $validated['username'],
-            'email' => $validated['email'],
             'role' => $validated['role'],
             'subdit_id' => $validated['role'] === UserRole::Operator->value
                 ? $validated['subdit_id']
@@ -106,7 +104,6 @@ class UserManagementController extends Controller
         $payload = [
             'name' => $validated['name'],
             'username' => $validated['username'],
-            'email' => $validated['email'],
             'role' => $validated['role'],
             'subdit_id' => $validated['role'] === UserRole::Operator->value
                 ? $validated['subdit_id']
