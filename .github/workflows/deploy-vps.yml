@@ -49,10 +49,16 @@ jobs:
         env:
           VPS_SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT }}
         run: |
           install -m 700 -d ~/.ssh
           KEY_MATERIAL="$(printf '%b' "${VPS_SSH_PRIVATE_KEY}" | tr -d '\r')"
-          SSH_PORT=22
+          SSH_PORT="${VPS_SSH_PORT:-22}"
+
+          if ! [[ "${SSH_PORT}" =~ ^[0-9]+$ ]] || (( SSH_PORT < 1 || SSH_PORT > 65535 )); then
+            echo "::error::VPS_SSH_PORT must be a valid TCP port (1-65535)."
+            exit 1
+          fi
 
           if [[ "${KEY_MATERIAL}" == *"-----BEGIN "* ]]; then
             printf '%s\n' "${KEY_MATERIAL}" > ~/.ssh/id_deploy
@@ -77,9 +83,15 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT }}
           DEPLOY_BRANCH: ${{ steps.context.outputs.deploy_branch }}
         run: |
-          SSH_PORT=22
+          SSH_PORT="${VPS_SSH_PORT:-22}"
+
+          if ! [[ "${SSH_PORT}" =~ ^[0-9]+$ ]] || (( SSH_PORT < 1 || SSH_PORT > 65535 )); then
+            echo "::error::VPS_SSH_PORT must be a valid TCP port (1-65535)."
+            exit 1
+          fi
 
           ssh -p "${SSH_PORT}" -i ~/.ssh/id_deploy -o IdentitiesOnly=yes "${VPS_USER}@${VPS_HOST}" \
             "APP_DIR='${VPS_APP_DIR}' DEPLOY_BRANCH='${DEPLOY_BRANCH}' bash '${VPS_APP_DIR}/scripts/deploy-homeserver.sh'"
